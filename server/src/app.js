@@ -1,40 +1,45 @@
-import express from "express";
+import cookieParser from "cookie-parser";
 import cors from "cors";
+import express from "express";
 import helmet from "helmet";
 import morgan from "morgan";
-import cookieParser from "cookie-parser";
 
 import {
   errorHandler,
   notFound,
 } from "./middleware/errorMiddleware.js";
 
+import authRoutes from "./routes/authRoutes.js";
+import subscriptionRoutes from "./routes/subscriptionRoutes.js";
+
 const app = express();
 
-// Basic security headers
 app.use(helmet());
 
-// Allow the React frontend to communicate with the backend
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin:
+      process.env.CLIENT_URL ||
+      "http://localhost:5173",
+
     credentials: true,
   })
 );
 
-// Parse JSON and form data
 app.use(express.json({ limit: "10kb" }));
-app.use(express.urlencoded({ extended: true }));
 
-// Read cookies
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
+
 app.use(cookieParser());
 
-// Show API requests during development
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
 }
 
-// Test endpoint
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
@@ -43,7 +48,9 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-// These must remain after all normal routes
+app.use("/api/auth", authRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
+
 app.use(notFound);
 app.use(errorHandler);
 

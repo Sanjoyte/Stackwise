@@ -1,0 +1,26 @@
+import express from "express";
+
+import {
+  createSubscription,
+  deleteSubscription,
+  getSubscriptionById,
+  getSubscriptions,
+  updateSubscription,
+} from "../controllers/subscriptionController.js";
+
+import { protect } from "../middleware/authMiddleware.js";
+
+const router = express.Router();
+
+router
+  .route("/")
+  .post(protect, createSubscription)
+  .get(protect, getSubscriptions);
+
+router
+  .route("/:id")
+  .get(protect, getSubscriptionById)
+  .put(protect, updateSubscription)
+  .delete(protect, deleteSubscription);
+
+export default router;
