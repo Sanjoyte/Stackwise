@@ -17,10 +17,12 @@ import { useAuth } from "../context/AuthContext";
 import api from "../api/axios";
 import AddSubscriptionDrawer from "../components/AddSubscriptionDrawer";
 import SubscriptionDetailModal from "../components/SubscriptionDetailModal";
+import { useNavigate } from "react-router";
 import "../subscriptions.css";
 
 export default function SubscriptionPage() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -132,6 +134,13 @@ export default function SubscriptionPage() {
           <BrandMark darkText />
           
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => navigate("/income")}
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-600 hover:bg-emerald-100 transition cursor-pointer"
+            >
+              Income Tracking
+            </button>
             <span className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3.5 py-1.5 text-xs font-semibold text-indigo-600">
               <Layers size={13} />
               Base: {baseCurrency}
