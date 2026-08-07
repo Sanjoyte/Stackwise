@@ -10,6 +10,7 @@ import {
 } from "./components/RouteGuards";
 
 import AuthPage from "./pages/AuthPage";
+import LoginSuccessPage from "./pages/LoginSuccessPage";
 import DashboardPage from "./pages/DashboardPage";
 
 export default function App() {
@@ -35,6 +36,15 @@ export default function App() {
 
       <Route
         path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <LoginSuccessPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/subscription"
         element={
           <ProtectedRoute>
             <DashboardPage />

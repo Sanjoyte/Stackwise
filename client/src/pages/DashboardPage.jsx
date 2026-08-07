@@ -11,7 +11,8 @@ import {
   Layers,
   ArrowRight,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router";
 import BrandMark from "../components/BrandMark";
 import { useAuth } from "../context/AuthContext";
 import api from "../api/axios";
@@ -77,8 +78,182 @@ export default function DashboardPage() {
     return amount; // Fallback
   };
 
+  const getSubscriptionSpend = (sub) => {
+    const amountInBase = convertToUserBase(sub.amount, sub.currency);
+    let monthlyAmount = amountInBase;
+    let annualAmount = amountInBase;
+
+    if (sub.billingCycle === "annual") {
+      monthlyAmount = amountInBase / 12;
+    } else if (sub.billingCycle === "weekly") {
+      monthlyAmount = amountInBase * 4.33;
+    }
+
+    if (sub.billingCycle === "monthly") {
+      annualAmount = amountInBase * 12;
+    } else if (sub.billingCycle === "weekly") {
+      annualAmount = amountInBase * 52;
+    }
+
+    return {
+      monthly: monthlyAmount,
+      annual: annualAmount,
+      displayAmount: formatItemCurrency(sub.amount, sub.currency),
+    };
+  };
+
+  const MASTER_CAPABILITY_CATALOG = [
+    {
+      key: "writing",
+      label: "Writing Assistance",
+      patterns: ["write", "content", "copy", "draft", "blog", "story", "editor"],
+    },
+    {
+      key: "chat",
+      label: "Chat Assistance",
+      patterns: ["chat", "assistant", "conversational", "dialogue", "ai chat"],
+    },
+    {
+      key: "image generation",
+      label: "Image Generation",
+      patterns: ["image", "visual", "picture", "illustration", "design", "art", "photo"],
+    },
+    {
+      key: "api access",
+      label: "API Access",
+      patterns: ["api", "integration", "endpoint", "developer", "sdk", "programmatic"],
+    },
+    {
+      key: "automation",
+      label: "Workflow Automation",
+      patterns: ["automate", "automation", "workflow", "process", "task"],
+    },
+    {
+      key: "analytics",
+      label: "Analytics",
+      patterns: ["analytics", "report", "data", "insight", "tracking"],
+    },
+    {
+      key: "collaboration",
+      label: "Collaboration",
+      patterns: ["team", "collaborate", "shared", "workspace", "project"],
+    },
+    {
+      key: "translation",
+      label: "Translation",
+      patterns: ["translate", "translation", "language", "localize"],
+    },
+    {
+      key: "code assistance",
+      label: "Code Assistance",
+      patterns: ["code", "developer", "programming", "debug", "syntax", "IDE"],
+    },
+    {
+      key: "security",
+      label: "Security",
+      patterns: ["security", "privacy", "encrypt", "auth", "compliance"],
+    },
+  ];
+
+  const normalizeCapabilities = (caps = []) => {
+    const normalized = Array.from(
+      new Set(
+        (caps || [])
+          .map((cap) => cap?.toString().trim())
+          .filter(Boolean)
+          .map((cap) => cap.toLowerCase())
+      )
+    );
+
+    return normalized.map((cap) => {
+      const matched = MASTER_CAPABILITY_CATALOG.find((entry) =>
+        entry.patterns.some((pattern) => cap.includes(pattern))
+      );
+      return matched ? matched.key : cap;
+    });
+  };
+
+  const buildOverlapGroups = (subs) => {
+    const adjacency = new Map();
+    subs.forEach((sub) => adjacency.set(sub._id, new Set()));
+
+    for (let i = 0; i < subs.length; i += 1) {
+      for (let j = i + 1; j < subs.length; j += 1) {
+        const capsA = normalizeCapabilities(subs[i].capabilities);
+        const capsB = normalizeCapabilities(subs[j].capabilities);
+        const shared = capsA.filter((tag) => capsB.includes(tag));
+
+        if (shared.length > 0) {
+          adjacency.get(subs[i]._id).add(subs[j]._id);
+          adjacency.get(subs[j]._id).add(subs[i]._id);
+        }
+      }
+    }
+
+    const groups = [];
+    const visited = new Set();
+
+    subs.forEach((sub) => {
+      if (visited.has(sub._id)) return;
+
+      const stack = [sub._id];
+      const currentGroupIds = [];
+
+      while (stack.length > 0) {
+        const id = stack.pop();
+        if (visited.has(id)) continue;
+        visited.add(id);
+        currentGroupIds.push(id);
+
+        const neighbors = adjacency.get(id) || new Set();
+        neighbors.forEach((neighborId) => {
+          if (!visited.has(neighborId)) {
+            stack.push(neighborId);
+          }
+        });
+      }
+
+      if (currentGroupIds.length > 1) {
+        const groupSubscriptions = subs.filter((item) => currentGroupIds.includes(item._id));
+        const commonCapabilities = groupSubscriptions
+          .map((item) => normalizeCapabilities(item.capabilities))
+          .reduce((common, next) => common.filter((tag) => next.includes(tag)), normalizeCapabilities(groupSubscriptions[0].capabilities));
+
+        groups.push({
+          subscriptions: groupSubscriptions,
+          sharedCapabilities: Array.from(new Set(commonCapabilities)),
+        });
+      }
+    });
+
+    return groups;
+  };
+
+  const location = useLocation();
+  const query = new URLSearchParams(location.search);
+  const focusOverlap = query.get("focus") === "overlap";
+
   const activeSubs = subscriptions.filter((sub) => sub.status === "active");
   const cancelledSubs = subscriptions.filter((sub) => sub.status === "cancelled");
+
+  const overlapGroups = useMemo(() => buildOverlapGroups(activeSubs), [activeSubs]);
+  const hasOverlap = overlapGroups.length > 0;
+  const overlapMemberMap = useMemo(() => {
+    const map = new Map();
+    overlapGroups.forEach((group) => {
+      group.subscriptions.forEach((sub) => map.set(sub._id, true));
+    });
+    return map;
+  }, [overlapGroups]);
+
+  useEffect(() => {
+    if (!focusOverlap) return;
+    const targetId = hasOverlap ? "overlap-section" : "no-overlap-section";
+    const target = document.getElementById(targetId);
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [focusOverlap, hasOverlap]);
 
   // Sum total monthly spend
   const totalMonthlySpend = activeSubs.reduce((sum, sub) => {
@@ -248,7 +423,142 @@ export default function DashboardPage() {
             </button>
           </article>
 
+          {hasOverlap ? (
+            <article id="overlap-section" className="rounded-3xl border border-rose-200 bg-white p-6 shadow-xs text-slate-900 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-50 text-rose-700">
+                  <span className="text-lg font-bold">!</span>
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-rose-700">
+                    Overlap detected
+                  </p>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    {overlapGroups.length} overlap group{overlapGroups.length === 1 ? "" : "s"}
+                  </h3>
+                </div>
+              </div>
+              <p className="mt-4 text-sm text-slate-500">
+                We found subscriptions sharing similar AI tool capabilities. Compare cost and features side-by-side to reduce redundant spend.
+              </p>
+              <div className="mt-5 space-y-3 text-sm text-slate-600">
+                {overlapGroups.slice(0, 3).map((group, index) => (
+                  <div key={`badge-group-${index}`} className="rounded-2xl bg-rose-50 border border-rose-100 p-3">
+                    <p className="font-semibold text-slate-900">Overlap group {index + 1}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {group.subscriptions.map((sub) => sub.name).join(" / ")}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ) : focusOverlap ? (
+            <article id="no-overlap-section" className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 shadow-xs text-slate-900 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                  <span className="text-lg font-bold">✓</span>
+                </span>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
+                    No overlap detected
+                  </p>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    Your subscriptions do not share overlapping AI capabilities
+                  </h3>
+                </div>
+              </div>
+              <p className="mt-4 text-sm text-slate-500">
+                We did not detect any overlapping capability tags between your active subscriptions.
+              </p>
+            </article>
+          ) : null}
+
         </section>
+
+        {hasOverlap && (
+          <section className="space-y-6">
+            <div className="rounded-3xl border border-rose-200 bg-rose-50 p-6 shadow-xs">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-rose-700">
+                    AI Tool Overlap Detected
+                  </p>
+                  <h3 className="mt-2 text-xl font-bold text-slate-900">
+                    {overlapGroups.length} overlap group{overlapGroups.length === 1 ? "" : "s"} found
+                  </h3>
+                  <p className="mt-2 text-sm text-slate-600 max-w-2xl">
+                    These subscriptions share significant capability overlap and should be reviewed side-by-side to avoid redundant AI spend.
+                  </p>
+                </div>
+                <div className="rounded-3xl bg-white border border-rose-100 px-4 py-3 text-sm text-rose-700">
+                  {overlapGroups.reduce((count, group) => count + group.subscriptions.length, 0)} subscriptions in overlap groups
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              {overlapGroups.map((group, groupIndex) => (
+                <div key={`overlap-detail-${groupIndex}`} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700">Overlap group {groupIndex + 1}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        Shared capabilities: {group.sharedCapabilities.length > 0 ? group.sharedCapabilities.join(", ") : "Multiple similar AI features"}
+                      </p>
+                    </div>
+                    <div className="text-sm text-slate-500">
+                      {group.subscriptions.length} subscriptions compared
+                    </div>
+                  </div>
+
+                  <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                    {group.subscriptions.map((sub) => {
+                      const spend = getSubscriptionSpend(sub);
+                      const normalized = normalizeCapabilities(sub.capabilities);
+                      return (
+                        <div key={sub._id} className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h4 className="font-semibold text-slate-900">{sub.name}</h4>
+                              <p className="text-xs text-slate-500 mt-1">{sub.planName || "PRO TIER"} • {sub.category || "AI"}</p>
+                            </div>
+                            <span className="rounded-full bg-rose-100 px-2.5 py-1 text-[11px] font-semibold text-rose-700 uppercase">
+                              Overlap
+                            </span>
+                          </div>
+
+                          <div className="mt-4 flex items-baseline gap-2">
+                            <p className="text-2xl font-extrabold text-slate-900">{formatItemCurrency(sub.amount, sub.currency)}</p>
+                            <span className="text-xs text-slate-500 capitalize">/{sub.billingCycle}</span>
+                          </div>
+
+                          <div className="mt-4 grid gap-2 rounded-3xl bg-white p-3 text-sm text-slate-600 border border-slate-200">
+                            <div className="flex items-center justify-between">
+                              <span>Monthly equivalent</span>
+                              <span className="font-semibold text-slate-900">{formatCurrency(spend.monthly)}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>Annual equivalent</span>
+                              <span className="font-semibold text-slate-900">{formatCurrency(spend.annual)}</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {normalized.map((cap) => (
+                              <span key={`${sub._id}-${cap}`} className="inline-flex items-center rounded-full bg-indigo-100 px-2.5 py-1 text-[11px] font-semibold text-indigo-700">
+                                {cap}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Subscriptions Lists */}
         <section className="space-y-6">
