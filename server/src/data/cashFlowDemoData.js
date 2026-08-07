@@ -30,6 +30,51 @@ export const demoCashFlowSeries = {
       expenses: 1000,
       subscriptions: 190,
     },
+    {
+      label: "Jun",
+      totalIn: 4200,
+      expenses: 1100,
+      subscriptions: 190,
+    },
+    {
+      label: "Jul",
+      totalIn: 4500,
+      expenses: 1300,
+      subscriptions: 190,
+    },
+    {
+      label: "Aug",
+      totalIn: 4700,
+      expenses: 1400,
+      subscriptions: 190,
+    },
+
+    // Future months.
+    // No actual data yet, so keep them zero.
+    {
+      label: "Sep",
+      totalIn: 0,
+      expenses: 0,
+      subscriptions: 0,
+    },
+    {
+      label: "Oct",
+      totalIn: 0,
+      expenses: 0,
+      subscriptions: 0,
+    },
+    {
+      label: "Nov",
+      totalIn: 0,
+      expenses: 0,
+      subscriptions: 0,
+    },
+    {
+      label: "Dec",
+      totalIn: 0,
+      expenses: 0,
+      subscriptions: 0,
+    },
   ],
 
   yearly: [
