@@ -1,16 +1,10 @@
-import {
-  Navigate,
-  Route,
-  Routes,
-} from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 
-import {
-  ProtectedRoute,
-  PublicRoute,
-} from "./components/RouteGuards";
+import { ProtectedRoute, PublicRoute } from "./components/RouteGuards";
 
 import AuthPage from "./pages/AuthPage";
 import LoginSuccessPage from "./pages/LoginSuccessPage";
+import DashboardPage from "./pages/DashboardPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import CashFlowPage from "./pages/CashFlowPage";
 import IncomePage from "./pages/IncomePage";
@@ -47,6 +41,18 @@ export default function App() {
           ========================= */}
       <Route
         path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* =========================
+          LOGIN SUCCESS
+          ========================= */}
+      <Route
+        path="/login-success"
         element={
           <ProtectedRoute>
             <LoginSuccessPage />
@@ -96,10 +102,7 @@ export default function App() {
       <Route
         path="/"
         element={
-          <Navigate
-            to="/login"
-            replace
-          />
+          <Navigate to="/login" replace />
         }
       />
 
@@ -109,10 +112,7 @@ export default function App() {
       <Route
         path="*"
         element={
-          <Navigate
-            to="/login"
-            replace
-          />
+          <Navigate to="/login" replace />
         }
       />
     </Routes>

@@ -1,20 +1,18 @@
 import { useNavigate } from "react-router";
-
 import {
+  ArrowRight,
   LogOut,
   Sparkles,
   WalletCards,
-  ArrowRight,
 } from "lucide-react";
 
 import BrandMark from "../components/BrandMark";
+import { useAuth } from "../context/AuthContext";
 
 import {
   CashFlowSidebar,
   CashFlowMobileNav,
 } from "../components/cashflow/CashFlowNav";
-
-import { useAuth } from "../context/AuthContext";
 
 import "../styles/cashFlow.css";
 
@@ -23,7 +21,7 @@ export default function LoginSuccessPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="cf-page">
+    <div className="cf-layout">
       {/* =========================
           LEFT SIDEBAR
           ========================= */}
@@ -68,7 +66,8 @@ export default function LoginSuccessPage() {
 
               <p className="mt-4 max-w-2xl text-slate-500">
                 Your Stackwise authentication system is working. Manage your
-                subscriptions, cash flow, and income from your dashboard.
+                subscriptions, cash flow, income tracking, and AI overlap alerts
+                from your dashboard.
               </p>
 
               {/* =========================
@@ -110,7 +109,7 @@ export default function LoginSuccessPage() {
                   NAVIGATION BUTTONS
                   ========================= */}
               <div className="mt-10 flex flex-wrap gap-4">
-                {/* Subscription */}
+                {/* Subscriptions */}
                 <button
                   type="button"
                   onClick={() => navigate("/subscription")}
@@ -137,6 +136,16 @@ export default function LoginSuccessPage() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-cyan-200 transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
                 >
                   Go to Income Tracking
+                  <ArrowRight size={20} />
+                </button>
+
+                {/* Overlap Alerts */}
+                <button
+                  type="button"
+                  onClick={() => navigate("/subscription?focus=overlap")}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-rose-200 transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
+                >
+                  View Overlap Alerts
                   <ArrowRight size={20} />
                 </button>
               </div>
