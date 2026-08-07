@@ -18,8 +18,14 @@ import api from "../api/axios";
 import AddSubscriptionDrawer from "../components/AddSubscriptionDrawer";
 import SubscriptionDetailModal from "../components/SubscriptionDetailModal";
 import "../subscriptions.css";
+import {
+  CashFlowSidebar,
+  CashFlowMobileNav,
+} from "../components/cashflow/CashFlowNav";
 
-export default function DashboardPage() {
+import "../styles/cashFlow.css";
+
+export default function SubscriptionPage() {
   const { user, logout } = useAuth();
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -124,6 +130,10 @@ export default function DashboardPage() {
   };
 
   return (
+    <div className="cf-page">
+    <CashFlowSidebar />
+
+    <div className="cf-workspace">
     <main className="min-h-screen bg-[#f5f3ff] px-4 py-7 sm:px-8">
       <div className="mx-auto max-w-6xl space-y-7">
         
@@ -152,7 +162,7 @@ export default function DashboardPage() {
           <section className="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-xs space-y-3.5">
             <div className="flex items-center gap-2 text-amber-800 font-bold text-sm tracking-wide">
               <AlertTriangle size={18} className="text-amber-600 animate-pulse" />
-              IMPENDING TRIAL CONVERSIONS (&lt; 48 HOURS)
+              IMPENDING TRIAL CONVERSIONS ({'<'} 48 HOURS)
             </div>
             <div className="grid gap-3.5 md:grid-cols-2">
               {impendingTrials.map((sub) => {
@@ -409,5 +419,8 @@ export default function DashboardPage() {
         onEdit={handleEditClick}
       />
     </main>
+       <CashFlowMobileNav />
+    </div>
+  </div>
   );
 }

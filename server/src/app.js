@@ -11,10 +11,19 @@ import {
 
 import authRoutes from "./routes/authRoutes.js";
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
+import cashFlowRoutes from "./routes/cashFlowRoutes.js";
 
 const app = express();
 
+/* =========================
+   Security middleware
+   ========================= */
+
 app.use(helmet());
+
+/* =========================
+   CORS
+   ========================= */
 
 app.use(
   cors({
@@ -26,7 +35,15 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: "10kb" }));
+/* =========================
+   Body parsers
+   ========================= */
+
+app.use(
+  express.json({
+    limit: "10kb",
+  })
+);
 
 app.use(
   express.urlencoded({
@@ -34,11 +51,23 @@ app.use(
   })
 );
 
+/* =========================
+   Cookies
+   ========================= */
+
 app.use(cookieParser());
+
+/* =========================
+   Development logging
+   ========================= */
 
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
 }
+
+/* =========================
+   Health check
+   ========================= */
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
@@ -48,10 +77,42 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-app.use("/api/auth", authRoutes);
-app.use("/api/subscriptions", subscriptionRoutes);
+/* =========================
+   Authentication routes
+   ========================= */
+
+app.use(
+  "/api/auth",
+  authRoutes
+);
+
+/* =========================
+   Subscription routes
+   ========================= */
+
+app.use(
+  "/api/subscriptions",
+  subscriptionRoutes
+);
+
+/* =========================
+   Cash Flow routes
+   ========================= */
+
+app.use(
+  "/api/cash-flow",
+  cashFlowRoutes
+);
+
+/* =========================
+   Error handling
+   IMPORTANT:
+   These must stay after
+   all normal routes.
+   ========================= */
 
 app.use(notFound);
+
 app.use(errorHandler);
 
 export default app;

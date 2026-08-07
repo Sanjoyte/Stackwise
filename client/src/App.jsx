@@ -10,11 +10,14 @@ import {
 } from "./components/RouteGuards";
 
 import AuthPage from "./pages/AuthPage";
-import DashboardPage from "./pages/DashboardPage";
+import CashFlowPage from "./pages/CashFlowPage";
+import LoginSuccessPage from "./pages/LoginSuccessPage";
+import SubscriptionPage from "./pages/SubscriptionPage";
 
 export default function App() {
   return (
     <Routes>
+      {/* Login */}
       <Route
         path="/login"
         element={
@@ -24,6 +27,7 @@ export default function App() {
         }
       />
 
+      {/* Signup */}
       <Route
         path="/signup"
         element={
@@ -33,15 +37,37 @@ export default function App() {
         }
       />
 
+      {/* Dashboard */}
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <DashboardPage />
+            <LoginSuccessPage />
           </ProtectedRoute>
         }
       />
 
+      {/* Subscription */}
+      <Route
+        path="/subscription"
+        element={
+          <ProtectedRoute>
+            <SubscriptionPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Cash Flow */}
+      <Route
+        path="/cash-flow"
+        element={
+          <ProtectedRoute>
+            <CashFlowPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Default Route */}
       <Route
         path="/"
         element={
@@ -52,6 +78,7 @@ export default function App() {
         }
       />
 
+      {/* Unknown Routes */}
       <Route
         path="*"
         element={
