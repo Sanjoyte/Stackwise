@@ -55,12 +55,6 @@ const recurringIncomeTemplateSchema = new mongoose.Schema(
       type: Date,
       required: [true, "Expected payment date is required"],
     },
-
-    loggingMethod: {
-      type: String,
-      enum: ["manual", "automatic"],
-      default: "manual",
-    },
   },
   {
     timestamps: true,

@@ -31,7 +31,6 @@ export default function AddIncomeDrawer({
     clientName: "",
     frequency: "monthly",
     expectedDate: new Date().toISOString().split("T")[0],
-    loggingMethod: "manual",
   });
 
   const [form, setForm] = useState(getInitialIncomeForm());
@@ -63,7 +62,6 @@ export default function AddIncomeDrawer({
           expectedDate: incomeToEdit.expectedDate
             ? new Date(incomeToEdit.expectedDate).toISOString().split("T")[0]
             : new Date().toISOString().split("T")[0],
-          loggingMethod: incomeToEdit.loggingMethod || "manual",
         });
       }
     } else {
@@ -341,20 +339,6 @@ export default function AddIncomeDrawer({
                 </div>
               </div>
 
-              <div>
-                <label className="drawer-label mb-1.5 block font-semibold text-slate-700">
-                  Logging Method
-                </label>
-                <select
-                  name="loggingMethod"
-                  value={form.loggingMethod}
-                  onChange={handleChange}
-                  className="drawer-select w-full px-3 py-3 outline-none"
-                >
-                  <option value="manual">Manual (1-click log)</option>
-                  <option value="automatic">Automatic (System logs it)</option>
-                </select>
-              </div>
             </>
           )}
 

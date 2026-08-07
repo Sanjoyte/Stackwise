@@ -93,18 +93,6 @@ export default function TemplateDetailModal({
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-500">
-              <span className="font-bold text-xs">LOG</span>
-            </div>
-            <div>
-              <p className="text-xs font-semibold uppercase text-slate-400">Logging Method</p>
-              <p className="font-bold text-slate-800 capitalize">
-                {template.loggingMethod || "Manual"}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
               <span className="font-bold text-xs">STAT</span>
             </div>

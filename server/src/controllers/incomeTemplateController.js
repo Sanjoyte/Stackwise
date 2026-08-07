@@ -6,7 +6,7 @@ import Income from "../models/Income.js";
 // @access  Private
 export const createTemplate = async (req, res, next) => {
   try {
-    const { templateName, amount, currency, source, clientName, frequency, status, expectedDate, loggingMethod } = req.body;
+    const { templateName, amount, currency, source, clientName, frequency, status, expectedDate } = req.body;
 
     if (!templateName || amount === undefined || !source || !expectedDate) {
       return res.status(400).json({
@@ -25,7 +25,6 @@ export const createTemplate = async (req, res, next) => {
       frequency: frequency || "monthly",
       status: status || "active",
       expectedDate: new Date(expectedDate),
-      loggingMethod: loggingMethod || "manual",
     });
 
     return res.status(201).json({
@@ -78,7 +77,7 @@ export const updateTemplate = async (req, res, next) => {
       });
     }
 
-    const { templateName, amount, currency, source, clientName, frequency, status, expectedDate, loggingMethod } = req.body;
+    const { templateName, amount, currency, source, clientName, frequency, status, expectedDate } = req.body;
 
     const updates = {};
     if (templateName !== undefined) updates.templateName = templateName;
@@ -89,7 +88,6 @@ export const updateTemplate = async (req, res, next) => {
     if (frequency !== undefined) updates.frequency = frequency;
     if (status !== undefined) updates.status = status;
     if (expectedDate !== undefined) updates.expectedDate = new Date(expectedDate);
-    if (loggingMethod !== undefined) updates.loggingMethod = loggingMethod;
 
     template = await RecurringIncomeTemplate.findByIdAndUpdate(
       req.params.id,

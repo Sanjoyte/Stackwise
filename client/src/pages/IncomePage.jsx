@@ -95,7 +95,7 @@ export default function IncomePage() {
     if (fromCurrency === baseCurrency) return amount;
     if (fromCurrency === "USD" && baseCurrency === "BDT") return amount * USD_TO_BDT;
     if (fromCurrency === "BDT" && baseCurrency === "USD") return amount / USD_TO_BDT;
-    return amount; 
+    return amount;
   };
 
   const formatCurrency = (val) => {
@@ -122,24 +122,16 @@ export default function IncomePage() {
     .filter((inc) => new Date(inc.date) >= oneYearAgo)
     .reduce((sum, inc) => sum + convertToUserBase(inc.amount, inc.currency), 0);
 
-  const handleLogFromTemplate = async (e, templateId) => {
-    e.stopPropagation();
-    try {
-      await api.post(`/income-templates/${templateId}/log`);
-      fetchData();
-    } catch (err) {
-      alert("Failed to log income from template.");
-    }
-  };
+
 
   return (
     <main className="min-h-screen bg-[#f5f3ff] px-4 py-7 sm:px-8">
       <div className="mx-auto max-w-6xl space-y-7">
-        
+
         {/* Navigation Header */}
         <header className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-indigo-100 bg-white px-6 py-4.5 shadow-xs">
           <BrandMark darkText />
-          
+
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -165,7 +157,7 @@ export default function IncomePage() {
 
         {/* Spend Metrics Summary Panel */}
         <section className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          
+
           {/* Monthly Income Card */}
           <article className="rounded-3xl border border-indigo-100 bg-white p-6 shadow-xs flex flex-col justify-between">
             <div>
@@ -260,22 +252,13 @@ export default function IncomePage() {
                     </div>
                     {tpl.expectedDate && (
                       <p className="text-[11px] text-slate-500 mt-2 flex items-center gap-1">
-                        <Calendar size={11} /> 
+                        <Calendar size={11} />
                         Exp: {new Date(tpl.expectedDate).toLocaleDateString(undefined, {
                           month: 'short', day: 'numeric', year: 'numeric'
                         })}
                       </p>
                     )}
                   </div>
-                  {(!tpl.loggingMethod || tpl.loggingMethod === "manual") && (
-                    <button
-                      onClick={(e) => handleLogFromTemplate(e, tpl._id)}
-                      className="mt-4 w-full flex items-center justify-center gap-1.5 rounded-xl bg-indigo-50 px-3 py-2 text-xs font-bold text-indigo-600 hover:bg-indigo-100 transition cursor-pointer"
-                    >
-                      <Zap size={14} />
-                      Log Payment
-                    </button>
-                  )}
                 </article>
               ))}
             </div>
