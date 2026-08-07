@@ -11,22 +11,40 @@ import {
 
 import authRoutes from "./routes/authRoutes.js";
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
+import cashFlowRoutes from "./routes/cashFlowRoutes.js";
+import incomeRoutes from "./routes/incomeRoutes.js";
+import incomeTemplateRoutes from "./routes/incomeTemplateRoutes.js";
 
 const app = express();
 
+/* =========================
+   Security middleware
+   ========================= */
+
 app.use(helmet());
+
+/* =========================
+   CORS
+   ========================= */
 
 app.use(
   cors({
     origin:
       process.env.CLIENT_URL ||
       "http://localhost:5173",
-
     credentials: true,
   })
 );
 
-app.use(express.json({ limit: "10kb" }));
+/* =========================
+   Body parsers
+   ========================= */
+
+app.use(
+  express.json({
+    limit: "10kb",
+  })
+);
 
 app.use(
   express.urlencoded({
@@ -34,11 +52,23 @@ app.use(
   })
 );
 
+/* =========================
+   Cookies
+   ========================= */
+
 app.use(cookieParser());
+
+/* =========================
+   Development logging
+   ========================= */
 
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
 }
+
+/* =========================
+   Health check
+   ========================= */
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
@@ -48,10 +78,58 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+/* =========================
+   Authentication routes
+   ========================= */
+
 app.use("/api/auth", authRoutes);
-app.use("/api/subscriptions", subscriptionRoutes);
+
+/* =========================
+   Subscription routes
+   ========================= */
+
+app.use(
+  "/api/subscriptions",
+  subscriptionRoutes
+);
+
+/* =========================
+   Cash Flow routes
+   ========================= */
+
+app.use(
+  "/api/cash-flow",
+  cashFlowRoutes
+);
+
+/* =========================
+   Income routes
+   ========================= */
+
+app.use(
+  "/api/incomes",
+  incomeRoutes
+);
+
+/* =========================
+   Income Template routes
+   ========================= */
+
+app.use(
+  "/api/income-templates",
+  incomeTemplateRoutes
+);
+
+/* =========================
+   404 handler
+   ========================= */
 
 app.use(notFound);
+
+/* =========================
+   Global error handler
+   ========================= */
+
 app.use(errorHandler);
 
 export default app;

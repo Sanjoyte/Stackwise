@@ -11,13 +11,17 @@ import {
   Layers,
   ArrowRight,
 } from "lucide-react";
+
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router";
+
 import BrandMark from "../components/BrandMark";
-import { useAuth } from "../context/AuthContext";
-import api from "../api/axios";
 import AddSubscriptionDrawer from "../components/AddSubscriptionDrawer";
 import SubscriptionDetailModal from "../components/SubscriptionDetailModal";
+
+import { useAuth } from "../context/AuthContext";
+import api from "../api/axios";
+
 import "../subscriptions.css";
 
 export default function DashboardPage() {

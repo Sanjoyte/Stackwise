@@ -1,21 +1,20 @@
-import {
-  Navigate,
-  Route,
-  Routes,
-} from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 
-import {
-  ProtectedRoute,
-  PublicRoute,
-} from "./components/RouteGuards";
+import { ProtectedRoute, PublicRoute } from "./components/RouteGuards";
 
 import AuthPage from "./pages/AuthPage";
 import LoginSuccessPage from "./pages/LoginSuccessPage";
 import DashboardPage from "./pages/DashboardPage";
+import SubscriptionPage from "./pages/SubscriptionPage";
+import CashFlowPage from "./pages/CashFlowPage";
+import IncomePage from "./pages/IncomePage";
 
 export default function App() {
   return (
     <Routes>
+      {/* =========================
+          LOGIN
+          ========================= */}
       <Route
         path="/login"
         element={
@@ -25,6 +24,9 @@ export default function App() {
         }
       />
 
+      {/* =========================
+          SIGNUP
+          ========================= */}
       <Route
         path="/signup"
         element={
@@ -34,17 +36,11 @@ export default function App() {
         }
       />
 
+      {/* =========================
+          DASHBOARD
+          ========================= */}
       <Route
         path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <LoginSuccessPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/subscription"
         element={
           <ProtectedRoute>
             <DashboardPage />
@@ -52,23 +48,71 @@ export default function App() {
         }
       />
 
+      {/* =========================
+          LOGIN SUCCESS
+          ========================= */}
       <Route
-        path="/"
+        path="/login-success"
         element={
-          <Navigate
-            to="/login"
-            replace
-          />
+          <ProtectedRoute>
+            <LoginSuccessPage />
+          </ProtectedRoute>
         }
       />
 
+      {/* =========================
+          SUBSCRIPTION
+          ========================= */}
+      <Route
+        path="/subscription"
+        element={
+          <ProtectedRoute>
+            <SubscriptionPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* =========================
+          CASH FLOW
+          ========================= */}
+      <Route
+        path="/cash-flow"
+        element={
+          <ProtectedRoute>
+            <CashFlowPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* =========================
+          INCOME
+          ========================= */}
+      <Route
+        path="/income"
+        element={
+          <ProtectedRoute>
+            <IncomePage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* =========================
+          DEFAULT ROUTE
+          ========================= */}
+      <Route
+        path="/"
+        element={
+          <Navigate to="/login" replace />
+        }
+      />
+
+      {/* =========================
+          UNKNOWN ROUTES
+          ========================= */}
       <Route
         path="*"
         element={
-          <Navigate
-            to="/login"
-            replace
-          />
+          <Navigate to="/login" replace />
         }
       />
     </Routes>

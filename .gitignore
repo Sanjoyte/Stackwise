@@ -2,9 +2,7 @@
 node_modules/
 **/node_modules/
 
-# Environment variables
-.env
-**/.env
+
 
 # Build files
 dist/
@@ -22,3 +20,8 @@ npm-debug.log*
 # Operating system
 .DS_Store
 Thumbs.db
+
+# Environment files
+.env
+client/.env
+server/.env
