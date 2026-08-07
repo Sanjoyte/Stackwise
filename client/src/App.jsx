@@ -10,7 +10,8 @@ import {
 } from "./components/RouteGuards";
 
 import AuthPage from "./pages/AuthPage";
-import DashboardPage from "./pages/DashboardPage";
+import LoginSuccessPage from "./pages/LoginSuccessPage";
+import SubscriptionPage from "./pages/SubscriptionPage";
 
 export default function App() {
   return (
@@ -37,7 +38,16 @@ export default function App() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <DashboardPage />
+            <LoginSuccessPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/subscription"
+        element={
+          <ProtectedRoute>
+            <SubscriptionPage />
           </ProtectedRoute>
         }
       />

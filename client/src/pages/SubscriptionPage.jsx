@@ -19,7 +19,7 @@ import AddSubscriptionDrawer from "../components/AddSubscriptionDrawer";
 import SubscriptionDetailModal from "../components/SubscriptionDetailModal";
 import "../subscriptions.css";
 
-export default function DashboardPage() {
+export default function SubscriptionPage() {
   const { user, logout } = useAuth();
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -152,7 +152,7 @@ export default function DashboardPage() {
           <section className="rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-xs space-y-3.5">
             <div className="flex items-center gap-2 text-amber-800 font-bold text-sm tracking-wide">
               <AlertTriangle size={18} className="text-amber-600 animate-pulse" />
-              IMPENDING TRIAL CONVERSIONS (&lt; 48 HOURS)
+              IMPENDING TRIAL CONVERSIONS ({'<'} 48 HOURS)
             </div>
             <div className="grid gap-3.5 md:grid-cols-2">
               {impendingTrials.map((sub) => {
