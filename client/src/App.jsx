@@ -10,14 +10,16 @@ import {
 } from "./components/RouteGuards";
 
 import AuthPage from "./pages/AuthPage";
-import CashFlowPage from "./pages/CashFlowPage";
 import LoginSuccessPage from "./pages/LoginSuccessPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
+import CashFlowPage from "./pages/CashFlowPage";
 
 export default function App() {
   return (
     <Routes>
-      {/* Login */}
+      {/* =========================
+          LOGIN
+          ========================= */}
       <Route
         path="/login"
         element={
@@ -27,7 +29,9 @@ export default function App() {
         }
       />
 
-      {/* Signup */}
+      {/* =========================
+          SIGNUP
+          ========================= */}
       <Route
         path="/signup"
         element={
@@ -37,7 +41,9 @@ export default function App() {
         }
       />
 
-      {/* Dashboard */}
+      {/* =========================
+          DASHBOARD
+          ========================= */}
       <Route
         path="/dashboard"
         element={
@@ -47,7 +53,9 @@ export default function App() {
         }
       />
 
-      {/* Subscription */}
+      {/* =========================
+          SUBSCRIPTION
+          ========================= */}
       <Route
         path="/subscription"
         element={
@@ -57,7 +65,9 @@ export default function App() {
         }
       />
 
-      {/* Cash Flow */}
+      {/* =========================
+          CASH FLOW
+          ========================= */}
       <Route
         path="/cash-flow"
         element={
@@ -67,7 +77,9 @@ export default function App() {
         }
       />
 
-      {/* Default Route */}
+      {/* =========================
+          DEFAULT ROUTE
+          ========================= */}
       <Route
         path="/"
         element={
@@ -78,7 +90,9 @@ export default function App() {
         }
       />
 
-      {/* Unknown Routes */}
+      {/* =========================
+          UNKNOWN ROUTES
+          ========================= */}
       <Route
         path="*"
         element={

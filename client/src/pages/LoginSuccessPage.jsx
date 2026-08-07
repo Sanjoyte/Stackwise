@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router";
-
 import {
   LogOut,
   Sparkles,
@@ -8,7 +7,6 @@ import {
 } from "lucide-react";
 
 import BrandMark from "../components/BrandMark";
-
 import {
   CashFlowSidebar,
   CashFlowMobileNav,
@@ -36,7 +34,7 @@ export default function LoginSuccessPage() {
         <main className="min-h-screen bg-[#f7f4ff] px-5 py-7 sm:px-8">
           <div className="mx-auto max-w-6xl">
             {/* =========================
-                EXISTING DASHBOARD HEADER
+                DASHBOARD HEADER
                 ========================= */}
             <header className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-indigo-100 bg-white px-6 py-5 shadow-sm">
               <BrandMark darkText />
@@ -52,22 +50,23 @@ export default function LoginSuccessPage() {
             </header>
 
             {/* =========================
-                EXISTING DASHBOARD CONTENT
+                DASHBOARD CONTENT
                 ========================= */}
             <section className="py-14">
+              {/* Login Success Badge */}
               <div className="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-2 text-xs font-bold uppercase tracking-[0.16em] text-indigo-600">
                 <Sparkles size={14} />
                 Login successful
               </div>
 
+              {/* Welcome Message */}
               <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
                 Welcome, {user?.name}
               </h1>
 
               <p className="mt-4 max-w-2xl text-slate-500">
-                Your Stackwise authentication system is
-                working. Module 1 subscription features will
-                be placed on this dashboard.
+                Your Stackwise authentication system is working. Module 1
+                subscription features will be placed on this dashboard.
               </p>
 
               {/* =========================
@@ -81,13 +80,11 @@ export default function LoginSuccessPage() {
                   },
                   {
                     label: "Base currency",
-                    value:
-                      user?.baseCurrency || "BDT",
+                    value: user?.baseCurrency || "BDT",
                   },
                   {
                     label: "Account role",
-                    value:
-                      user?.role || "individual",
+                    value: user?.role || "individual",
                   },
                 ].map((item) => (
                   <article
@@ -108,25 +105,23 @@ export default function LoginSuccessPage() {
               </div>
 
               {/* =========================
-                  EXISTING NAVIGATION BUTTONS
+                  NAVIGATION BUTTONS
                   ========================= */}
               <div className="mt-10 flex flex-wrap gap-4">
+                {/* Subscription Dashboard */}
                 <button
                   type="button"
-                  onClick={() =>
-                    navigate("/subscription")
-                  }
+                  onClick={() => navigate("/subscription")}
                   className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:shadow-xl"
                 >
                   Go to Subscription Dashboard
                   <ArrowRight size={20} />
                 </button>
 
+                {/* Cash Flow Dashboard */}
                 <button
                   type="button"
-                  onClick={() =>
-                    navigate("/cash-flow")
-                  }
+                  onClick={() => navigate("/cash-flow")}
                   className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-emerald-200 transition hover:-translate-y-0.5 hover:shadow-xl"
                 >
                   Go to Cash Flow Dashboard
@@ -137,7 +132,9 @@ export default function LoginSuccessPage() {
           </div>
         </main>
 
-        {/* Mobile version of the same navigation */}
+        {/* =========================
+            MOBILE NAVIGATION
+            ========================= */}
         <CashFlowMobileNav />
       </div>
     </div>
