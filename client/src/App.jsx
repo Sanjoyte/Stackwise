@@ -13,6 +13,7 @@ import AuthPage from "./pages/AuthPage";
 import LoginSuccessPage from "./pages/LoginSuccessPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import CashFlowPage from "./pages/CashFlowPage";
+import IncomePage from "./pages/IncomePage";
 
 export default function App() {
   return (
@@ -73,6 +74,18 @@ export default function App() {
         element={
           <ProtectedRoute>
             <CashFlowPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* =========================
+          INCOME
+          ========================= */}
+      <Route
+        path="/income"
+        element={
+          <ProtectedRoute>
+            <IncomePage />
           </ProtectedRoute>
         }
       />

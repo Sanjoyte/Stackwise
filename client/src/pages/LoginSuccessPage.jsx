@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router";
+
 import {
   LogOut,
   Sparkles,
@@ -7,6 +8,7 @@ import {
 } from "lucide-react";
 
 import BrandMark from "../components/BrandMark";
+
 import {
   CashFlowSidebar,
   CashFlowMobileNav,
@@ -65,8 +67,8 @@ export default function LoginSuccessPage() {
               </h1>
 
               <p className="mt-4 max-w-2xl text-slate-500">
-                Your Stackwise authentication system is working. Module 1
-                subscription features will be placed on this dashboard.
+                Your Stackwise authentication system is working. Manage your
+                subscriptions, cash flow, and income from your dashboard.
               </p>
 
               {/* =========================
@@ -108,23 +110,33 @@ export default function LoginSuccessPage() {
                   NAVIGATION BUTTONS
                   ========================= */}
               <div className="mt-10 flex flex-wrap gap-4">
-                {/* Subscription Dashboard */}
+                {/* Subscription */}
                 <button
                   type="button"
                   onClick={() => navigate("/subscription")}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:shadow-xl"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
                 >
-                  Go to Subscription Dashboard
+                  Go to Subscriptions
                   <ArrowRight size={20} />
                 </button>
 
-                {/* Cash Flow Dashboard */}
+                {/* Cash Flow */}
                 <button
                   type="button"
                   onClick={() => navigate("/cash-flow")}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-emerald-200 transition hover:-translate-y-0.5 hover:shadow-xl"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-emerald-200 transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
                 >
                   Go to Cash Flow Dashboard
+                  <ArrowRight size={20} />
+                </button>
+
+                {/* Income Tracking */}
+                <button
+                  type="button"
+                  onClick={() => navigate("/income")}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-cyan-200 transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
+                >
+                  Go to Income Tracking
                   <ArrowRight size={20} />
                 </button>
               </div>

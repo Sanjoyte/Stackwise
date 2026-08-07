@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 
 import BrandMark from "../components/BrandMark";
 import { useAuth } from "../context/AuthContext";
@@ -31,6 +32,7 @@ import "../styles/cashFlow.css";
 
 export default function SubscriptionPage() {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
   const [subscriptions, setSubscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -154,8 +156,7 @@ export default function SubscriptionPage() {
       } else if (
         sub.billingCycle === "weekly"
       ) {
-        monthlyAmount =
-          amountInBase * 4.33;
+        monthlyAmount = amountInBase * 4.33;
       }
 
       return sum + monthlyAmount;
@@ -180,8 +181,7 @@ export default function SubscriptionPage() {
       } else if (
         sub.billingCycle === "weekly"
       ) {
-        annualAmount =
-          amountInBase * 52;
+        annualAmount = amountInBase * 52;
       }
 
       return sum + annualAmount;
@@ -192,7 +192,6 @@ export default function SubscriptionPage() {
   // =========================
   // TRIAL ALERTS
   // =========================
-  // Active trials expiring within 48 hours
   const impendingTrials = activeSubs.filter(
     (sub) => {
       if (!sub.isTrial) {
@@ -266,11 +265,24 @@ export default function SubscriptionPage() {
               <BrandMark darkText />
 
               <div className="flex items-center gap-3">
-                <span className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 px-3.5 py-1.5 text-xs font-semibold text-indigo-600">
+                {/* Income Tracking */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate("/income")
+                  }
+                  className="hidden cursor-pointer items-center gap-1.5 rounded-xl bg-emerald-50 px-3.5 py-1.5 text-xs font-semibold text-emerald-600 transition hover:bg-emerald-100 sm:inline-flex"
+                >
+                  Income Tracking
+                </button>
+
+                {/* Base Currency */}
+                <span className="hidden items-center gap-1.5 rounded-xl bg-indigo-50 px-3.5 py-1.5 text-xs font-semibold text-indigo-600 sm:inline-flex">
                   <Layers size={13} />
                   Base: {baseCurrency}
                 </span>
 
+                {/* Logout */}
                 <button
                   type="button"
                   onClick={logout}
@@ -294,8 +306,7 @@ export default function SubscriptionPage() {
             {/* =========================
                 TRIAL COUNTDOWN
                 ========================= */}
-            {impendingTrials.length >
-              0 && (
+            {impendingTrials.length > 0 && (
               <section className="space-y-3.5 rounded-3xl border border-amber-200 bg-amber-50 p-5 shadow-xs">
                 <div className="flex items-center gap-2 text-sm font-bold tracking-wide text-amber-800">
                   <AlertTriangle
@@ -303,8 +314,7 @@ export default function SubscriptionPage() {
                     className="animate-pulse text-amber-600"
                   />
 
-                  IMPENDING TRIAL
-                  CONVERSIONS (
+                  IMPENDING TRIAL CONVERSIONS (
                   {"<"} 48 HOURS)
                 </div>
 
@@ -357,21 +367,13 @@ export default function SubscriptionPage() {
                           </div>
 
                           <div className="flex items-center gap-1.5 rounded-xl bg-amber-100 px-3 py-1.5 text-xs font-extrabold text-amber-700">
-                            <Clock
-                              size={
-                                13
-                              }
-                            />
+                            <Clock size={13} />
 
                             <span>
-                              {days >
-                              0
+                              {days > 0
                                 ? `${days}d `
                                 : ""}
-                              {
-                                hours
-                              }
-                              h left
+                              {hours}h left
                             </span>
                           </div>
                         </article>
@@ -391,8 +393,7 @@ export default function SubscriptionPage() {
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Monthly
-                      Spend
+                      Monthly Spend
                     </span>
 
                     <span className="rounded-xl bg-indigo-50 p-2.5 text-indigo-500">
@@ -447,9 +448,7 @@ export default function SubscriptionPage() {
               <article className="flex flex-col justify-between rounded-3xl bg-indigo-600 p-6 text-white shadow-xs sm:col-span-2 lg:col-span-1">
                 <div className="space-y-2">
                   <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-1 text-[10px] font-bold uppercase tracking-wider">
-                    <Sparkles
-                      size={11}
-                    />
+                    <Sparkles size={11} />
                     Control center
                   </div>
 
@@ -484,13 +483,10 @@ export default function SubscriptionPage() {
             <section className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-slate-800">
-                  Active
-                  Subscriptions
+                  Active Subscriptions
 
                   <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
-                    {
-                      activeSubs.length
-                    }
+                    {activeSubs.length}
                   </span>
                 </h2>
               </div>
@@ -499,8 +495,7 @@ export default function SubscriptionPage() {
                 <div className="flex items-center justify-center rounded-3xl border border-indigo-50 bg-white py-20">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600" />
                 </div>
-              ) : activeSubs.length ===
-                0 ? (
+              ) : activeSubs.length === 0 ? (
                 <div className="rounded-3xl border border-dashed border-indigo-200 bg-white py-16 text-center">
                   <WalletCards
                     className="mx-auto mb-4 text-indigo-300"
@@ -508,8 +503,7 @@ export default function SubscriptionPage() {
                   />
 
                   <h3 className="text-sm font-bold text-slate-700">
-                    No Active
-                    Subscriptions
+                    No Active Subscriptions
                   </h3>
 
                   <p className="mx-auto mt-1 max-w-xs text-xs text-slate-400">
@@ -534,9 +528,7 @@ export default function SubscriptionPage() {
 
                       return (
                         <article
-                          key={
-                            sub._id
-                          }
+                          key={sub._id}
                           onClick={() =>
                             handleCardClick(
                               sub
@@ -552,9 +544,7 @@ export default function SubscriptionPage() {
                             <div>
                               <div className="flex items-center gap-2">
                                 <h3 className="text-base font-bold text-slate-800">
-                                  {
-                                    sub.name
-                                  }
+                                  {sub.name}
                                 </h3>
 
                                 <span className="inline-flex items-center rounded-md border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium capitalize text-indigo-600">
@@ -638,9 +628,7 @@ export default function SubscriptionPage() {
                           <div className="mt-4 flex items-center justify-between border-t border-slate-50 pt-3.5 text-xs text-slate-500">
                             <div className="flex items-center gap-1">
                               <Calendar
-                                size={
-                                  13
-                                }
+                                size={13}
                                 className="text-indigo-400"
                               />
 
@@ -677,8 +665,7 @@ export default function SubscriptionPage() {
               {/* =========================
                   CANCELLED SUBSCRIPTIONS
                   ========================= */}
-              {cancelledSubs.length >
-                0 && (
+              {cancelledSubs.length > 0 && (
                 <div className="space-y-4 pt-5">
                   <h3 className="text-md font-bold text-slate-500">
                     Cancelled /
@@ -690,9 +677,7 @@ export default function SubscriptionPage() {
                     {cancelledSubs.map(
                       (sub) => (
                         <article
-                          key={
-                            sub._id
-                          }
+                          key={sub._id}
                           onClick={() =>
                             handleCardClick(
                               sub
@@ -703,9 +688,7 @@ export default function SubscriptionPage() {
                           <div className="flex items-start justify-between">
                             <div>
                               <h4 className="text-sm font-bold text-slate-700 line-through">
-                                {
-                                  sub.name
-                                }
+                                {sub.name}
                               </h4>
 
                               <p className="mt-0.5 text-xs text-slate-400">

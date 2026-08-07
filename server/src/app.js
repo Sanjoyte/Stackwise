@@ -12,6 +12,8 @@ import {
 import authRoutes from "./routes/authRoutes.js";
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import cashFlowRoutes from "./routes/cashFlowRoutes.js";
+import incomeRoutes from "./routes/incomeRoutes.js";
+import incomeTemplateRoutes from "./routes/incomeTemplateRoutes.js";
 
 const app = express();
 
@@ -30,7 +32,6 @@ app.use(
     origin:
       process.env.CLIENT_URL ||
       "http://localhost:5173",
-
     credentials: true,
   })
 );
@@ -81,10 +82,7 @@ app.get("/api/health", (req, res) => {
    Authentication routes
    ========================= */
 
-app.use(
-  "/api/auth",
-  authRoutes
-);
+app.use("/api/auth", authRoutes);
 
 /* =========================
    Subscription routes
@@ -105,13 +103,32 @@ app.use(
 );
 
 /* =========================
-   Error handling
-   IMPORTANT:
-   These must stay after
-   all normal routes.
+   Income routes
+   ========================= */
+
+app.use(
+  "/api/incomes",
+  incomeRoutes
+);
+
+/* =========================
+   Income Template routes
+   ========================= */
+
+app.use(
+  "/api/income-templates",
+  incomeTemplateRoutes
+);
+
+/* =========================
+   404 handler
    ========================= */
 
 app.use(notFound);
+
+/* =========================
+   Global error handler
+   ========================= */
 
 app.use(errorHandler);
 
