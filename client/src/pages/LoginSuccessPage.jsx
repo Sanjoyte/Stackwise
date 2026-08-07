@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router";
+
 import {
   ArrowRight,
   LogOut,
@@ -21,7 +22,7 @@ export default function LoginSuccessPage() {
   const navigate = useNavigate();
 
   return (
-    <div className="cf-layout">
+    <div className="cf-page">
       {/* =========================
           LEFT SIDEBAR
           ========================= */}
@@ -66,8 +67,8 @@ export default function LoginSuccessPage() {
 
               <p className="mt-4 max-w-2xl text-slate-500">
                 Your Stackwise authentication system is working. Manage your
-                subscriptions, cash flow, income tracking, and AI overlap alerts
-                from your dashboard.
+                subscriptions, cash flow, income tracking, and AI overlap
+                alerts from your dashboard.
               </p>
 
               {/* =========================
@@ -77,7 +78,7 @@ export default function LoginSuccessPage() {
                 {[
                   {
                     label: "Account email",
-                    value: user?.email,
+                    value: user?.email || "Not available",
                   },
                   {
                     label: "Base currency",
@@ -109,7 +110,9 @@ export default function LoginSuccessPage() {
                   NAVIGATION BUTTONS
                   ========================= */}
               <div className="mt-10 flex flex-wrap gap-4">
-                {/* Subscriptions */}
+                {/* =========================
+                    SUBSCRIPTIONS
+                    ========================= */}
                 <button
                   type="button"
                   onClick={() => navigate("/subscription")}
@@ -119,7 +122,9 @@ export default function LoginSuccessPage() {
                   <ArrowRight size={20} />
                 </button>
 
-                {/* Cash Flow */}
+                {/* =========================
+                    CASH FLOW
+                    ========================= */}
                 <button
                   type="button"
                   onClick={() => navigate("/cash-flow")}
@@ -129,7 +134,9 @@ export default function LoginSuccessPage() {
                   <ArrowRight size={20} />
                 </button>
 
-                {/* Income Tracking */}
+                {/* =========================
+                    INCOME TRACKING
+                    ========================= */}
                 <button
                   type="button"
                   onClick={() => navigate("/income")}
@@ -139,10 +146,12 @@ export default function LoginSuccessPage() {
                   <ArrowRight size={20} />
                 </button>
 
-                {/* Overlap Alerts */}
+                {/* =========================
+                    OVERLAP ALERTS
+                    ========================= */}
                 <button
                   type="button"
-                  onClick={() => navigate("/subscription?focus=overlap")}
+                  onClick={() => navigate("/subscription#overlap")}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-rose-200 transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
                 >
                   View Overlap Alerts

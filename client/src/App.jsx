@@ -1,6 +1,13 @@
-import { Navigate, Route, Routes } from "react-router";
+import {
+  Navigate,
+  Route,
+  Routes,
+} from "react-router";
 
-import { ProtectedRoute, PublicRoute } from "./components/RouteGuards";
+import {
+  ProtectedRoute,
+  PublicRoute,
+} from "./components/RouteGuards";
 
 import AuthPage from "./pages/AuthPage";
 import LoginSuccessPage from "./pages/LoginSuccessPage";
@@ -37,19 +44,20 @@ export default function App() {
       />
 
       {/* =========================
-          DASHBOARD
+          MAIN DASHBOARD
           ========================= */}
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <DashboardPage />
+            <LoginSuccessPage />
           </ProtectedRoute>
         }
       />
 
       {/* =========================
           LOGIN SUCCESS
+          Keep for compatibility
           ========================= */}
       <Route
         path="/login-success"
@@ -61,7 +69,7 @@ export default function App() {
       />
 
       {/* =========================
-          SUBSCRIPTION
+          SUBSCRIPTIONS
           ========================= */}
       <Route
         path="/subscription"
@@ -85,7 +93,7 @@ export default function App() {
       />
 
       {/* =========================
-          INCOME
+          INCOME TRACKING
           ========================= */}
       <Route
         path="/income"
@@ -97,12 +105,28 @@ export default function App() {
       />
 
       {/* =========================
-          DEFAULT ROUTE
+          AI OVERLAP PAGE
+          Keeps DashboardPage feature
+          ========================= */}
+      <Route
+        path="/ai-overlap"
+        element={
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* =========================
+          DEFAULT
           ========================= */}
       <Route
         path="/"
         element={
-          <Navigate to="/login" replace />
+          <Navigate
+            to="/login"
+            replace
+          />
         }
       />
 
@@ -112,7 +136,10 @@ export default function App() {
       <Route
         path="*"
         element={
-          <Navigate to="/login" replace />
+          <Navigate
+            to="/login"
+            replace
+          />
         }
       />
     </Routes>
