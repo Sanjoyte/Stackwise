@@ -12,6 +12,7 @@ import {
 import AuthPage from "./pages/AuthPage";
 import LoginSuccessPage from "./pages/LoginSuccessPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
+import IncomePage from "./pages/IncomePage";
 
 export default function App() {
   return (
@@ -48,6 +49,15 @@ export default function App() {
         element={
           <ProtectedRoute>
             <SubscriptionPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/income"
+        element={
+          <ProtectedRoute>
+            <IncomePage />
           </ProtectedRoute>
         }
       />

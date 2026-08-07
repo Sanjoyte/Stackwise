@@ -11,6 +11,8 @@ import {
 
 import authRoutes from "./routes/authRoutes.js";
 import subscriptionRoutes from "./routes/subscriptionRoutes.js";
+import incomeRoutes from "./routes/incomeRoutes.js";
+import incomeTemplateRoutes from "./routes/incomeTemplateRoutes.js";
 
 const app = express();
 
@@ -50,6 +52,8 @@ app.get("/api/health", (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/subscriptions", subscriptionRoutes);
+app.use("/api/incomes", incomeRoutes);
+app.use("/api/income-templates", incomeTemplateRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

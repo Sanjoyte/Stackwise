@@ -84,9 +84,17 @@ export default function LoginSuccessPage() {
             <button
               type="button"
               onClick={() => navigate("/subscription")}
-              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:shadow-xl"
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:shadow-xl w-full sm:w-auto"
             >
-              Go to Subscription Dashboard
+              Go to Subscriptions
+              <ArrowRight size={20} />
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/income")}
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 px-8 py-4 text-base font-bold text-white shadow-lg shadow-emerald-200 transition hover:-translate-y-0.5 hover:shadow-xl w-full sm:w-auto mt-4 sm:mt-0 sm:ml-4"
+            >
+              Go to Income Tracking
               <ArrowRight size={20} />
             </button>
           </div>
