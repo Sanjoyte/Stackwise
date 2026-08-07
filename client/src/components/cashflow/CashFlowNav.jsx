@@ -27,9 +27,10 @@ const navigationItems = [
   },
 
   {
-    label: "Income",
-    icon: WalletCards,
-    enabled: false,
+     label: "Income",
+  icon: WalletCards,
+  path: "/income",
+  enabled: true,
   },
 
   {
