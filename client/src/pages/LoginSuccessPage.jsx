@@ -151,7 +151,7 @@ export default function LoginSuccessPage() {
                     ========================= */}
                 <button
                   type="button"
-                  onClick={() => navigate("/subscription#overlap")}
+                  onClick={() => navigate("/overlap")}
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-rose-200 transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
                 >
                   View Overlap Alerts

@@ -13,6 +13,7 @@ import AuthPage from "./pages/AuthPage";
 import LoginSuccessPage from "./pages/LoginSuccessPage";
 import DashboardPage from "./pages/DashboardPage";
 import SubscriptionPage from "./pages/SubscriptionPage";
+import OverlapPage from "./pages/OverlapPage";
 import CashFlowPage from "./pages/CashFlowPage";
 import IncomePage from "./pages/IncomePage";
 
@@ -106,8 +107,17 @@ export default function App() {
 
       {/* =========================
           AI OVERLAP PAGE
-          Keeps DashboardPage feature
+          Dedicated overlap detection page
           ========================= */}
+      <Route
+        path="/overlap"
+        element={
+          <ProtectedRoute>
+            <OverlapPage />
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/ai-overlap"
         element={

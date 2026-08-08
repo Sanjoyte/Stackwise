@@ -208,9 +208,7 @@ export default function LoginSuccessPage() {
                     ========================= */}
                 <button
                   type="button"
-                  onClick={() =>
-                    navigate("/subscription?focus=overlap")
-                  }
+                  onClick={() => navigate("/overlap")}
                   className="group flex w-full items-center justify-between rounded-3xl bg-gradient-to-r from-rose-500 to-pink-600 px-6 py-5 text-left text-white shadow-lg shadow-rose-200 transition hover:-translate-y-0.5 hover:shadow-xl"
                 >
                   <div>
