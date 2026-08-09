@@ -157,6 +157,19 @@ export default function LoginSuccessPage() {
                   View Overlap Alerts
                   <ArrowRight size={20} />
                 </button>
+
+                {/* =========================
+                    ALTERNATIVE TOOL RECOMMENDATIONS
+                    ========================= */}
+                <button
+                  type="button"
+                  onClick={() => navigate("/recommendations")}
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-violet-200 transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
+                >
+                  <Sparkles size={19} />
+                  View Alternative Tool Recommendations
+                  <ArrowRight size={20} />
+                </button>
               </div>
             </section>
           </div>

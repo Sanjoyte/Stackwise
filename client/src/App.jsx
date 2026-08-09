@@ -16,6 +16,7 @@ import SubscriptionPage from "./pages/SubscriptionPage";
 import OverlapPage from "./pages/OverlapPage";
 import CashFlowPage from "./pages/CashFlowPage";
 import IncomePage from "./pages/IncomePage";
+import RecommendationsPage from "./pages/RecommendationsPage";
 
 export default function App() {
   return (
@@ -109,6 +110,11 @@ export default function App() {
           AI OVERLAP PAGE
           Dedicated overlap detection page
           ========================= */}
+      <Route
+        path="/recommendations"
+        element={<ProtectedRoute><RecommendationsPage /></ProtectedRoute>}
+      />
+
       <Route
         path="/overlap"
         element={

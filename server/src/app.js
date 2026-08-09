@@ -14,6 +14,7 @@ import subscriptionRoutes from "./routes/subscriptionRoutes.js";
 import cashFlowRoutes from "./routes/cashFlowRoutes.js";
 import incomeRoutes from "./routes/incomeRoutes.js";
 import incomeTemplateRoutes from "./routes/incomeTemplateRoutes.js";
+import recommendationRoutes from "./routes/recommendationRoutes.js";
 
 const app = express();
 
@@ -92,6 +93,8 @@ app.use(
   "/api/subscriptions",
   subscriptionRoutes
 );
+
+app.use("/api/recommendations", recommendationRoutes);
 
 /* =========================
    Cash Flow routes

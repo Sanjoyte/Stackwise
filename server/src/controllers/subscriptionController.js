@@ -19,6 +19,10 @@ export const createSubscription = async (req, res, next) => {
       trialAlert,
       category,
       capabilities,
+      requiredCapabilities,
+      usagePercentage,
+      isUnderutilized,
+      lastUsedAt,
     } = req.body;
 
     if (!name || amount === undefined || !renewalDate) {
@@ -45,6 +49,10 @@ export const createSubscription = async (req, res, next) => {
       capabilities: Array.isArray(capabilities)
         ? capabilities.map((cap) => cap.trim()).filter(Boolean)
         : [],
+      requiredCapabilities: Array.isArray(requiredCapabilities) ? requiredCapabilities.map((cap) => cap.trim()).filter(Boolean) : [],
+      usagePercentage: usagePercentage ?? 100,
+      isUnderutilized: isUnderutilized !== undefined ? !!isUnderutilized : Number(usagePercentage) < 40,
+      lastUsedAt: lastUsedAt ? new Date(lastUsedAt) : undefined,
       status: "active",
     });
 
@@ -143,6 +151,10 @@ export const updateSubscription = async (req, res, next) => {
       trialAlert,
       category,
       capabilities,
+      requiredCapabilities,
+      usagePercentage,
+      isUnderutilized,
+      lastUsedAt,
       status,
     } = req.body;
 
@@ -164,6 +176,13 @@ export const updateSubscription = async (req, res, next) => {
         ? capabilities.map((cap) => cap.trim()).filter(Boolean)
         : [];
     }
+    if (requiredCapabilities !== undefined) updates.requiredCapabilities = Array.isArray(requiredCapabilities) ? requiredCapabilities.map((cap) => cap.trim()).filter(Boolean) : [];
+    if (usagePercentage !== undefined) {
+      updates.usagePercentage = usagePercentage;
+      if (isUnderutilized === undefined) updates.isUnderutilized = Number(usagePercentage) < 40;
+    }
+    if (isUnderutilized !== undefined) updates.isUnderutilized = !!isUnderutilized;
+    if (lastUsedAt !== undefined) updates.lastUsedAt = lastUsedAt ? new Date(lastUsedAt) : null;
     if (status !== undefined) updates.status = status;
 
     subscription = await Subscription.findByIdAndUpdate(

@@ -83,6 +83,11 @@ const subscriptionSchema = new mongoose.Schema(
       trim: true,
     },
 
+    requiredCapabilities: { type: [String], default: [] },
+    usagePercentage: { type: Number, min: 0, max: 100, default: 100 },
+    isUnderutilized: { type: Boolean, default: false },
+    lastUsedAt: { type: Date },
+
     status: {
       type: String,
       enum: ["active", "cancelled"],

@@ -26,6 +26,7 @@ export default function AddSubscriptionDrawer({
     trialAlert: true,
     category: "AI",
     capabilities: [],
+    usagePercentage: 100,
   });
 
   const [form, setForm] = useState(getInitialForm());
@@ -53,6 +54,7 @@ export default function AddSubscriptionDrawer({
         capabilities: Array.isArray(subscriptionToEdit.capabilities)
           ? subscriptionToEdit.capabilities
           : [],
+        usagePercentage: subscriptionToEdit.usagePercentage ?? 100,
       });
     } else {
       setForm(getInitialForm());
@@ -316,6 +318,27 @@ export default function AddSubscriptionDrawer({
             </div>
             <p className="mt-1.5 text-xs text-slate-400">
               Press Enter or comma to add a capability. Click the × to remove.
+            </p>
+          </div>
+
+          {/* Trial / Promo Switch */}
+          <div>
+            <div className="mb-1.5 flex items-center justify-between">
+              <label className="drawer-label font-semibold text-slate-700">Actual monthly usage</label>
+              <span className="text-sm font-bold text-indigo-600">{form.usagePercentage}%</span>
+            </div>
+            <input
+              type="range"
+              name="usagePercentage"
+              min="0"
+              max="100"
+              step="5"
+              value={form.usagePercentage}
+              onChange={handleChange}
+              className="w-full accent-indigo-600"
+            />
+            <p className="mt-1.5 text-xs text-slate-400">
+              Subscriptions below 40% usage are automatically flagged as underutilized. Capability tags above should describe the features you actually need.
             </p>
           </div>
 
