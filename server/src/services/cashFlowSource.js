@@ -1,17 +1,41 @@
 import mongoose from "mongoose";
 
-import { demoCashFlowSeries } from "../data/cashFlowDemoData.js";
+import {
+  demoCashFlowSeries,
+} from "../data/cashFlowDemoData.js";
+
+/* =========================================
+   COLLECTION NAMES
+   ========================================= */
 
 const COLLECTION_NAMES = {
+  users: "users",
   incomes: "incomes",
   expenses: "expenses",
   subscriptions: "subscriptions",
 };
 
+/* =========================================
+   TEMPORARY CURRENCY CONVERSION
+
+   Same rate currently used elsewhere
+   in the Stackwise project.
+
+   Later this can be replaced by a
+   real exchange-rate service.
+   ========================================= */
+
+const USD_TO_BDT = 120;
+
+/* =========================================
+   DEMO FALLBACK
+   ========================================= */
+
 const buildDemoResult = (period) => ({
   source: "demo",
 
-  series: demoCashFlowSeries[period],
+  series:
+    demoCashFlowSeries[period],
 
   meta: {
     subscriptionCount: 3,
@@ -21,79 +45,181 @@ const buildDemoResult = (period) => ({
   },
 });
 
-const collectionExists = async (collectionName) => {
-  const database = mongoose.connection.db;
+/* =========================================
+   CHECK COLLECTION EXISTS
+   ========================================= */
 
-  if (!database) {
-    return false;
-  }
+const collectionExists =
+  async (collectionName) => {
+    const database =
+      mongoose.connection.db;
 
-  const collections = await database
-    .listCollections({
-      name: collectionName,
-    })
-    .toArray();
+    if (!database) {
+      return false;
+    }
 
-  return collections.length > 0;
-};
+    const collections =
+      await database
+        .listCollections({
+          name: collectionName,
+        })
+        .toArray();
 
-const getUserDocuments = async (
-  collectionName,
-  userId
-) => {
-  const database = mongoose.connection.db;
+    return collections.length > 0;
+  };
 
-  if (!database) {
-    return [];
-  }
+/* =========================================
+   GET DOCUMENTS BELONGING TO USER
+   ========================================= */
 
-  const exists =
-    await collectionExists(collectionName);
+const getUserDocuments =
+  async (
+    collectionName,
+    userId
+  ) => {
+    const database =
+      mongoose.connection.db;
 
-  if (!exists) {
-    return [];
-  }
+    if (!database) {
+      return [];
+    }
 
-  const conditions = [
-    {
-      user: userId,
-    },
-    {
-      userId,
-    },
-    {
-      owner: userId,
-    },
-  ];
+    const exists =
+      await collectionExists(
+        collectionName
+      );
 
-  if (
-    mongoose.Types.ObjectId.isValid(userId)
-  ) {
-    const objectId =
-      new mongoose.Types.ObjectId(userId);
+    if (!exists) {
+      return [];
+    }
 
-    conditions.push(
+    const conditions = [
       {
-        user: objectId,
+        user: String(userId),
       },
+
       {
-        userId: objectId,
+        userId:
+          String(userId),
       },
+
       {
-        owner: objectId,
+        owner: String(userId),
+      },
+    ];
+
+    /*
+     * Most MongoDB references are
+     * stored as ObjectId.
+     */
+    if (
+      mongoose.Types.ObjectId.isValid(
+        userId
+      )
+    ) {
+      const objectId =
+        new mongoose.Types.ObjectId(
+          userId
+        );
+
+      conditions.push(
+        {
+          user: objectId,
+        },
+
+        {
+          userId: objectId,
+        },
+
+        {
+          owner: objectId,
+        }
+      );
+    }
+
+    return database
+      .collection(
+        collectionName
+      )
+      .find({
+        $or: conditions,
+      })
+      .toArray();
+  };
+
+/* =========================================
+   GET USER BASE CURRENCY
+   ========================================= */
+
+const getUserBaseCurrency =
+  async (userId) => {
+    const database =
+      mongoose.connection.db;
+
+    if (!database) {
+      return "BDT";
+    }
+
+    try {
+      let query = {
+        _id: String(userId),
+      };
+
+      if (
+        mongoose.Types.ObjectId.isValid(
+          userId
+        )
+      ) {
+        query = {
+          $or: [
+            {
+              _id:
+                new mongoose.Types.ObjectId(
+                  userId
+                ),
+            },
+
+            {
+              _id:
+                String(userId),
+            },
+          ],
+        };
       }
-    );
-  }
 
-  return database
-    .collection(collectionName)
-    .find({
-      $or: conditions,
-    })
-    .toArray();
-};
+      const user =
+        await database
+          .collection(
+            COLLECTION_NAMES.users
+          )
+          .findOne(query);
 
-const getAmount = (document) => {
+      return (
+        String(
+          user?.baseCurrency ||
+            "BDT"
+        ).toUpperCase()
+      );
+    } catch (error) {
+      console.error(
+        "Could not read user base currency:",
+        error.message
+      );
+
+      return "BDT";
+    }
+  };
+
+/* =========================================
+   NORMAL MONEY AMOUNT
+
+   Used for Income and Expense exactly
+   as before.
+   ========================================= */
+
+const getAmount = (
+  document
+) => {
   const rawValue =
     document.amount ??
     document.total ??
@@ -102,12 +228,170 @@ const getAmount = (document) => {
     document.price ??
     0;
 
-  const amount = Number(rawValue);
+  const amount =
+    Number(rawValue);
 
-  return Number.isFinite(amount)
+  return Number.isFinite(
+    amount
+  )
     ? Math.abs(amount)
     : 0;
 };
+
+/* =========================================
+   CURRENCY HELPERS
+   ========================================= */
+
+const normalizeCurrency = (
+  currency,
+  fallbackCurrency = "BDT"
+) => {
+  const value =
+    String(
+      currency ||
+        fallbackCurrency
+    )
+      .trim()
+      .toUpperCase();
+
+  if (value === "৳") {
+    return "BDT";
+  }
+
+  if (value === "$") {
+    return "USD";
+  }
+
+  return value;
+};
+
+/* =========================================
+   CONVERT MONEY INTO USER'S BASE CURRENCY
+   ========================================= */
+
+const convertCurrency = ({
+  amount,
+  fromCurrency,
+  toCurrency,
+}) => {
+  const value =
+    Number(amount);
+
+  if (
+    !Number.isFinite(value)
+  ) {
+    return 0;
+  }
+
+  const from =
+    normalizeCurrency(
+      fromCurrency,
+      toCurrency
+    );
+
+  const to =
+    normalizeCurrency(
+      toCurrency,
+      "BDT"
+    );
+
+  /*
+   * Same currency.
+   */
+  if (from === to) {
+    return Math.abs(value);
+  }
+
+  /*
+   * USD → BDT
+   */
+  if (
+    from === "USD" &&
+    to === "BDT"
+  ) {
+    return (
+      Math.abs(value) *
+      USD_TO_BDT
+    );
+  }
+
+  /*
+   * BDT → USD
+   */
+  if (
+    from === "BDT" &&
+    to === "USD"
+  ) {
+    return (
+      Math.abs(value) /
+      USD_TO_BDT
+    );
+  }
+
+  /*
+   * Unknown currency.
+   *
+   * We leave the numeric value unchanged
+   * rather than failing the whole Cash Flow.
+   */
+  return Math.abs(value);
+};
+
+/* =========================================
+   GET SUBSCRIPTION AMOUNT
+
+   Unlike normal Expense/Income, this
+   checks currency.
+   ========================================= */
+
+const getSubscriptionAmount = (
+  subscription,
+  baseCurrency
+) => {
+  const rawAmount =
+    subscription.amount ??
+    subscription.price ??
+    subscription.cost ??
+    subscription.total ??
+    subscription.value ??
+    0;
+
+  const amount =
+    Number(rawAmount);
+
+  if (
+    !Number.isFinite(amount)
+  ) {
+    return 0;
+  }
+
+  /*
+   * IMPORTANT:
+   *
+   * If an older subscription document
+   * does not have a currency field,
+   * we assume it is already stored in
+   * the user's base currency.
+   */
+  const subscriptionCurrency =
+    subscription.currency ??
+    subscription.currencyCode ??
+    baseCurrency;
+
+  return convertCurrency({
+    amount,
+
+    fromCurrency:
+      subscriptionCurrency,
+
+    toCurrency:
+      baseCurrency,
+  });
+};
+
+/* =========================================
+   GET DOCUMENT DATE
+   ========================================= */
 
 const getDocumentDate = (
   document,
@@ -135,96 +419,170 @@ const getDocumentDate = (
     ];
   }
 
-  if (type === "subscription") {
+  if (
+    type === "subscription"
+  ) {
     candidates = [
+      document.startDate,
+      document.subscriptionStartDate,
+      document.billingDate,
+      document.createdAt,
       document.renewalDate,
       document.nextRenewalDate,
-      document.billingDate,
-      document.startDate,
-      document.createdAt,
     ];
   }
 
-  const rawDate = candidates.find(Boolean);
+  const rawDate =
+    candidates.find(Boolean);
 
   if (!rawDate) {
     return null;
   }
 
-  const date = new Date(rawDate);
+  const date =
+    new Date(rawDate);
 
-  if (Number.isNaN(date.getTime())) {
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
     return null;
   }
 
   return date;
 };
 
-const createMonthlyBuckets = () => {
-  const currentYear =
-    new Date().getFullYear();
+/* =========================================
+   SUBSCRIPTION END DATE
+   ========================================= */
 
-  return Array.from(
-    {
-      length: 12,
-    },
-    (_, monthIndex) => {
-      const date = new Date(
-        currentYear,
-        monthIndex,
-        1
-      );
+const getSubscriptionEndDate = (
+  subscription
+) => {
+  const rawDate =
+    subscription.cancelledAt ??
+    subscription.canceledAt ??
+    subscription.endDate ??
+    subscription.expiredAt ??
+    subscription.expiresAt ??
+    null;
 
-      return {
-        key: `${currentYear}-${String(
-          monthIndex + 1
-        ).padStart(2, "0")}`,
+  if (!rawDate) {
+    return null;
+  }
 
-        label:
-          new Intl.DateTimeFormat(
-            "en-US",
-            {
-              month: "short",
-            }
-          ).format(date),
+  const date =
+    new Date(rawDate);
 
-        totalIn: 0,
-        expenses: 0,
-        subscriptions: 0,
-      };
-    }
-  );
+  return Number.isNaN(
+    date.getTime()
+  )
+    ? null
+    : date;
 };
 
-const createYearlyBuckets = () => {
-  const currentYear =
-    new Date().getFullYear();
+/* =========================================
+   MONTHLY BUCKETS
 
-  return Array.from(
-    {
-      length: 5,
-    },
-    (_, index) => {
-      const year =
-        currentYear - 4 + index;
+   Always creates Jan → Dec for the
+   current year.
+   ========================================= */
 
-      return {
-        key: String(year),
-        label: String(year),
-        totalIn: 0,
-        expenses: 0,
-        subscriptions: 0,
-      };
-    }
-  );
-};
+const createMonthlyBuckets =
+  () => {
+    const currentYear =
+      new Date().getFullYear();
+
+    return Array.from(
+      {
+        length: 12,
+      },
+
+      (_, monthIndex) => {
+        const date =
+          new Date(
+            currentYear,
+            monthIndex,
+            1
+          );
+
+        return {
+          key: `${currentYear}-${String(
+            monthIndex + 1
+          ).padStart(2, "0")}`,
+
+          label:
+            new Intl.DateTimeFormat(
+              "en-US",
+              {
+                month:
+                  "short",
+              }
+            ).format(date),
+
+          totalIn: 0,
+
+          expenses: 0,
+
+          subscriptions: 0,
+        };
+      }
+    );
+  };
+
+/* =========================================
+   YEARLY BUCKETS
+
+   Current year + previous four years.
+   ========================================= */
+
+const createYearlyBuckets =
+  () => {
+    const currentYear =
+      new Date().getFullYear();
+
+    return Array.from(
+      {
+        length: 5,
+      },
+
+      (_, index) => {
+        const year =
+          currentYear -
+          4 +
+          index;
+
+        return {
+          key: String(year),
+
+          label:
+            String(year),
+
+          totalIn: 0,
+
+          expenses: 0,
+
+          subscriptions: 0,
+        };
+      }
+    );
+  };
+
+/* =========================================
+   GET BUCKET KEY
+   ========================================= */
 
 const getBucketKey = (
   date,
   period
 ) => {
-  if (period === "yearly") {
-    return String(date.getFullYear());
+  if (
+    period === "yearly"
+  ) {
+    return String(
+      date.getFullYear()
+    );
   }
 
   return `${date.getFullYear()}-${String(
@@ -232,83 +590,509 @@ const getBucketKey = (
   ).padStart(2, "0")}`;
 };
 
-const addDocumentsToBuckets = ({
-  documents,
-  buckets,
-  period,
-  type,
-  targetField,
-}) => {
-  documents.forEach((document) => {
-    const date = getDocumentDate(
-      document,
-      type
+/* =========================================
+   ADD NORMAL DOCUMENTS TO BUCKETS
+
+   Income and Expense continue using
+   this function.
+   ========================================= */
+
+const addDocumentsToBuckets =
+  ({
+    documents,
+    buckets,
+    period,
+    type,
+    targetField,
+  }) => {
+    documents.forEach(
+      (document) => {
+        const date =
+          getDocumentDate(
+            document,
+            type
+          );
+
+        if (!date) {
+          return;
+        }
+
+        const key =
+          getBucketKey(
+            date,
+            period
+          );
+
+        const bucket =
+          buckets.find(
+            (item) =>
+              item.key ===
+              key
+          );
+
+        if (!bucket) {
+          return;
+        }
+
+        bucket[
+          targetField
+        ] +=
+          getAmount(document);
+      }
     );
+  };
 
-    if (!date) {
-      return;
-    }
+/* =========================================
+   NORMALIZE BILLING CYCLE
+   ========================================= */
 
-    const key = getBucketKey(
-      date,
-      period
-    );
+const getBillingCycle = (
+  subscription
+) => {
+  const rawCycle =
+    subscription.billingCycle ??
+    subscription.billingFrequency ??
+    subscription.frequency ??
+    subscription.interval ??
+    "once";
 
-    const bucket = buckets.find(
-      (item) => item.key === key
-    );
+  const cycle =
+    String(rawCycle)
+      .trim()
+      .toLowerCase();
 
-    if (!bucket) {
-      return;
-    }
+  if (
+    cycle === "monthly" ||
+    cycle === "month"
+  ) {
+    return "monthly";
+  }
 
-    bucket[targetField] +=
-      getAmount(document);
-  });
+  if (
+    cycle === "yearly" ||
+    cycle === "annual" ||
+    cycle === "annually" ||
+    cycle === "year"
+  ) {
+    return "yearly";
+  }
+
+  if (
+    cycle === "weekly" ||
+    cycle === "week"
+  ) {
+    return "weekly";
+  }
+
+  if (
+    cycle === "quarterly" ||
+    cycle === "quarter"
+  ) {
+    return "quarterly";
+  }
+
+  if (
+    cycle ===
+      "semi-annually" ||
+    cycle ===
+      "semiannual" ||
+    cycle ===
+      "half-yearly"
+  ) {
+    return "semiannual";
+  }
+
+  return "once";
 };
+
+/* =========================================
+   ADD ONE BILLING INTERVAL
+   ========================================= */
+
+const moveToNextCharge = (
+  currentDate,
+  billingCycle
+) => {
+  const next =
+    new Date(currentDate);
+
+  switch (
+    billingCycle
+  ) {
+    case "weekly":
+      next.setDate(
+        next.getDate() + 7
+      );
+      break;
+
+    case "monthly":
+      next.setMonth(
+        next.getMonth() + 1
+      );
+      break;
+
+    case "quarterly":
+      next.setMonth(
+        next.getMonth() + 3
+      );
+      break;
+
+    case "semiannual":
+      next.setMonth(
+        next.getMonth() + 6
+      );
+      break;
+
+    case "yearly":
+      next.setFullYear(
+        next.getFullYear() + 1
+      );
+      break;
+
+    default:
+      return null;
+  }
+
+  return next;
+};
+
+/* =========================================
+   CHECK SUBSCRIPTION SHOULD BE SKIPPED
+   ========================================= */
+
+const shouldSkipSubscription = (
+  subscription
+) => {
+  const status =
+    String(
+      subscription.status ??
+        ""
+    )
+      .trim()
+      .toLowerCase();
+
+  /*
+   * If the record is explicitly marked
+   * inactive and has no historical
+   * cancellation/end date, ignore it.
+   */
+  if (
+    [
+      "inactive",
+      "deleted",
+    ].includes(status)
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
+/* =========================================
+   GENERATE SUBSCRIPTION CHARGE DATES
+
+   Example:
+
+   Monthly subscription started:
+   June 10
+
+   Current date:
+   August 9
+
+   Charges:
+   June 10
+   July 10
+
+   August 10 is still future,
+   therefore it is NOT counted yet.
+
+   If it started August 6 and today is
+   August 9, August 6 is counted.
+   ========================================= */
+
+const generateSubscriptionChargeDates =
+  (
+    subscription,
+    now
+  ) => {
+    const startDate =
+      getDocumentDate(
+        subscription,
+        "subscription"
+      );
+
+    if (!startDate) {
+      return [];
+    }
+
+    const endDate =
+      getSubscriptionEndDate(
+        subscription
+      );
+
+    const effectiveEnd =
+      endDate &&
+      endDate < now
+        ? endDate
+        : now;
+
+    if (
+      startDate >
+      effectiveEnd
+    ) {
+      return [];
+    }
+
+    const billingCycle =
+      getBillingCycle(
+        subscription
+      );
+
+    /*
+     * No recurring cycle:
+     * count only once.
+     */
+    if (
+      billingCycle ===
+      "once"
+    ) {
+      return [
+        startDate,
+      ];
+    }
+
+    const chargeDates =
+      [];
+
+    let currentCharge =
+      new Date(
+        startDate
+      );
+
+    /*
+     * Safety guard:
+     * prevents accidental infinite loops
+     * from malformed data.
+     */
+    let iterations = 0;
+
+    const MAX_ITERATIONS =
+      1000;
+
+    while (
+      currentCharge <=
+        effectiveEnd &&
+      iterations <
+        MAX_ITERATIONS
+    ) {
+      chargeDates.push(
+        new Date(
+          currentCharge
+        )
+      );
+
+      const nextCharge =
+        moveToNextCharge(
+          currentCharge,
+          billingCycle
+        );
+
+      if (!nextCharge) {
+        break;
+      }
+
+      currentCharge =
+        nextCharge;
+
+      iterations += 1;
+    }
+
+    return chargeDates;
+  };
+
+/* =========================================
+   ADD SUBSCRIPTIONS TO BUCKETS
+
+   Dedicated recurring subscription
+   calculation.
+   ========================================= */
+
+const addSubscriptionsToBuckets =
+  ({
+    subscriptions,
+    buckets,
+    period,
+    baseCurrency,
+  }) => {
+    const now =
+      new Date();
+
+    subscriptions.forEach(
+      (subscription) => {
+        if (
+          shouldSkipSubscription(
+            subscription
+          )
+        ) {
+          return;
+        }
+
+        const amount =
+          getSubscriptionAmount(
+            subscription,
+            baseCurrency
+          );
+
+        if (amount <= 0) {
+          return;
+        }
+
+        const chargeDates =
+          generateSubscriptionChargeDates(
+            subscription,
+            now
+          );
+
+        chargeDates.forEach(
+          (chargeDate) => {
+            const key =
+              getBucketKey(
+                chargeDate,
+                period
+              );
+
+            const bucket =
+              buckets.find(
+                (item) =>
+                  item.key ===
+                  key
+              );
+
+            /*
+             * Example:
+             * Monthly mode only has
+             * current-year buckets.
+             *
+             * Old charges therefore
+             * simply won't match.
+             */
+            if (!bucket) {
+              return;
+            }
+
+            bucket.subscriptions +=
+              amount;
+          }
+        );
+      }
+    );
+  };
+
+/* =========================================
+   ROUND BUCKET VALUES
+   ========================================= */
+
+const roundSeriesValues = (
+  buckets
+) => {
+  return buckets.map(
+    ({
+      key,
+      ...item
+    }) => ({
+      ...item,
+
+      totalIn:
+        Math.round(
+          (item.totalIn +
+            Number.EPSILON) *
+            100
+        ) / 100,
+
+      expenses:
+        Math.round(
+          (item.expenses +
+            Number.EPSILON) *
+            100
+        ) / 100,
+
+      subscriptions:
+        Math.round(
+          (item.subscriptions +
+            Number.EPSILON) *
+            100
+        ) / 100,
+    })
+  );
+};
+
+/* =========================================
+   BUILD LIVE SERIES
+   ========================================= */
 
 const buildLiveSeries = ({
   incomes,
   expenses,
   subscriptions,
   period,
+  baseCurrency,
 }) => {
   const buckets =
     period === "yearly"
       ? createYearlyBuckets()
       : createMonthlyBuckets();
 
+  /* Income */
   addDocumentsToBuckets({
     documents: incomes,
+
     buckets,
+
     period,
+
     type: "income",
-    targetField: "totalIn",
+
+    targetField:
+      "totalIn",
   });
 
+  /* Expenses */
   addDocumentsToBuckets({
     documents: expenses,
+
     buckets,
+
     period,
+
     type: "expense",
-    targetField: "expenses",
+
+    targetField:
+      "expenses",
   });
 
-  addDocumentsToBuckets({
-    documents: subscriptions,
+  /*
+   * Subscriptions are handled separately
+   * because they are recurring and may
+   * require currency conversion.
+   */
+  addSubscriptionsToBuckets({
+    subscriptions,
+
     buckets,
+
     period,
-    type: "subscription",
-    targetField: "subscriptions",
+
+    baseCurrency,
   });
 
-  return buckets.map(
-    ({
-      key,
-      ...item
-    }) => item
+  return roundSeriesValues(
+    buckets
   );
 };
+
+/* =========================================
+   MAIN CASH FLOW SOURCE
+   ========================================= */
 
 export const getCashFlowSourceData =
   async ({
@@ -317,18 +1101,17 @@ export const getCashFlowSourceData =
   }) => {
     /*
      * During parallel group development,
-     * fall back to safe demonstration data.
-     *
-     * Once Income and Expense collections
-     * contain records for this user,
-     * this service automatically begins
-     * returning live data.
+     * use safe demonstration data if
+     * MongoDB is unavailable.
      */
 
     if (
-      mongoose.connection.readyState !== 1
+      mongoose.connection
+        .readyState !== 1
     ) {
-      return buildDemoResult(period);
+      return buildDemoResult(
+        period
+      );
     }
 
     try {
@@ -336,46 +1119,58 @@ export const getCashFlowSourceData =
         incomes,
         expenses,
         subscriptions,
-      ] = await Promise.all([
-        getUserDocuments(
-          COLLECTION_NAMES.incomes,
-          userId
-        ),
+        baseCurrency,
+      ] =
+        await Promise.all([
+          getUserDocuments(
+            COLLECTION_NAMES.incomes,
+            userId
+          ),
 
-        getUserDocuments(
-          COLLECTION_NAMES.expenses,
-          userId
-        ),
+          getUserDocuments(
+            COLLECTION_NAMES.expenses,
+            userId
+          ),
 
-        getUserDocuments(
-          COLLECTION_NAMES.subscriptions,
-          userId
-        ),
-      ]);
+          getUserDocuments(
+            COLLECTION_NAMES.subscriptions,
+            userId
+          ),
+
+          getUserBaseCurrency(
+            userId
+          ),
+        ]);
 
       /*
-       * We require both Income and Expense
-       * records before switching to live
-       * dashboard calculations.
-       *
-       * This prevents a half-finished group
-       * module from producing misleading
-       * cash-flow values.
+       * Require both Income and Expense
+       * before switching to live mode.
        */
       const hasCompleteFinancialData =
-        incomes.length > 0 &&
-        expenses.length > 0;
+        incomes.length >
+          0 &&
+        expenses.length >
+          0;
 
-      if (!hasCompleteFinancialData) {
-        return buildDemoResult(period);
+      if (
+        !hasCompleteFinancialData
+      ) {
+        return buildDemoResult(
+          period
+        );
       }
 
       const series =
         buildLiveSeries({
           incomes,
+
           expenses,
+
           subscriptions,
+
           period,
+
+          baseCurrency,
         });
 
       return {
@@ -397,6 +1192,8 @@ export const getCashFlowSourceData =
         error.message
       );
 
-      return buildDemoResult(period);
+      return buildDemoResult(
+        period
+      );
     }
   };
