@@ -17,6 +17,7 @@ import OverlapPage from "./pages/OverlapPage";
 import CashFlowPage from "./pages/CashFlowPage";
 import IncomePage from "./pages/IncomePage";
 import RecommendationsPage from "./pages/RecommendationsPage";
+import ExpenseCategoryDetailPage from "./pages/ExpenseCategoryDetailPage";
 
 export default function App() {
   return (
@@ -146,6 +147,15 @@ export default function App() {
         }
       />
 
+      <Route
+  path="/expense-categories/:slug"
+  element={
+    <ProtectedRoute>
+      <ExpenseCategoryDetailPage />
+    </ProtectedRoute>
+  }
+/>
+
       {/* =========================
           UNKNOWN ROUTES
           ========================= */}
@@ -159,5 +169,8 @@ export default function App() {
         }
       />
     </Routes>
+
+    
   );
 }
+

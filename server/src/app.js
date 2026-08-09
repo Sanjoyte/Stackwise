@@ -15,6 +15,7 @@ import cashFlowRoutes from "./routes/cashFlowRoutes.js";
 import incomeRoutes from "./routes/incomeRoutes.js";
 import incomeTemplateRoutes from "./routes/incomeTemplateRoutes.js";
 import recommendationRoutes from "./routes/recommendationRoutes.js";
+import expenseCategoryRoutes from "./routes/expenseCategoryRoutes.js";
 
 const app = express();
 
@@ -117,6 +118,11 @@ app.use(
 /* =========================
    Income Template routes
    ========================= */
+
+app.use(
+  "/api/expense-categories",
+  expenseCategoryRoutes
+);
 
 app.use(
   "/api/income-templates",
