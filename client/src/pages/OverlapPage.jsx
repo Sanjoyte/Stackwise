@@ -170,7 +170,7 @@ export default function OverlapPage() {
 
               <p className="mt-4 text-sm text-slate-500">
                 This page uses the same overlap detection rules as your subscription dashboard.
-                It checks active subscriptions for shared feature capability tags and matching amounts.
+                It checks active subscriptions for shared feature capability tags, regardless of their prices.
               </p>
             </section>
 
@@ -183,7 +183,7 @@ export default function OverlapPage() {
                 <WalletCards className="mx-auto mb-4 text-indigo-300" size={40} />
                 <h3 className="text-lg font-bold text-slate-900">No overlap detected</h3>
                 <p className="mt-2 text-sm text-slate-500">
-                  We did not find any active subscriptions with duplicate capabilities and matching amounts.
+                  We did not find any active subscriptions with shared capabilities.
                 </p>
                 <button
                   type="button"
@@ -213,7 +213,7 @@ export default function OverlapPage() {
                   </div>
 
                   <p className="mt-4 text-sm text-slate-500">
-                    One or more active subscriptions share the same capability tags and amount.
+                    One or more active subscriptions share the same capability tags.
                   </p>
 
                   <div className="mt-5 space-y-3 text-sm text-slate-600">

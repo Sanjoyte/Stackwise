@@ -4,6 +4,8 @@ import {
   ReceiptText,
   Repeat2,
   WalletCards,
+  Sparkles,
+  AlertTriangle,
 } from "lucide-react";
 
 import {
@@ -31,6 +33,22 @@ const navigationItems = [
   icon: WalletCards,
   path: "/income",
   enabled: true,
+  },
+
+  {
+    label: "Alternatives",
+    shortLabel: "Saves",
+    icon: Sparkles,
+    path: "/recommendations",
+    enabled: true,
+  },
+
+  {
+    label: "Overlap Alerts",
+    shortLabel: "Overlap",
+    icon: AlertTriangle,
+    path: "/overlap",
+    enabled: true,
   },
 
   {

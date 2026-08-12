@@ -82,66 +82,32 @@ export function getSharedCapabilities(subA, subB) {
 }
 
 export function buildOverlapGroups(subs) {
-  const adjacency = new Map();
-  subs.forEach((sub) => adjacency.set(sub._id, new Set()));
-
-  for (let i = 0; i < subs.length; i += 1) {
-    for (let j = i + 1; j < subs.length; j += 1) {
-      const shared = getSharedCapabilities(subs[i], subs[j]);
-      const amountMatches = Number(subs[i].amount) === Number(subs[j].amount);
-
-      if (shared.length > 0 && amountMatches) {
-        adjacency.get(subs[i]._id).add(subs[j]._id);
-        adjacency.get(subs[j]._id).add(subs[i]._id);
-      }
-    }
-  }
-
-  const groups = [];
-  const visited = new Set();
-
+  const capabilityBuckets = new Map();
   subs.forEach((sub) => {
-    if (visited.has(sub._id)) return;
-
-    const stack = [sub._id];
-    const currentGroupIds = [];
-
-    while (stack.length > 0) {
-      const id = stack.pop();
-      if (visited.has(id)) continue;
-
-      visited.add(id);
-      currentGroupIds.push(id);
-
-      const neighbors = adjacency.get(id) || new Set();
-      neighbors.forEach((neighborId) => {
-        if (!visited.has(neighborId)) {
-          stack.push(neighborId);
-        }
-      });
-    }
-
-    if (currentGroupIds.length > 1) {
-      const groupSubscriptions = subs.filter((item) =>
-        currentGroupIds.includes(item._id)
-      );
-
-      const commonCapabilities = groupSubscriptions
-        .map((item) => normalizeCapabilities(item.capabilities))
-        .reduce(
-          (common, next) => common.filter((tag) => next.includes(tag)),
-          normalizeCapabilities(groupSubscriptions[0].capabilities)
-        );
-
-      groups.push({
-        subscriptions: groupSubscriptions,
-        sharedCapabilities: Array.from(new Set(commonCapabilities)),
-        requiresAmountMatch: true,
-      });
-    }
+    normalizeCapabilities(sub.capabilities).forEach((capability) => {
+      if (!capabilityBuckets.has(capability)) capabilityBuckets.set(capability, []);
+      capabilityBuckets.get(capability).push(sub);
+    });
   });
 
-  return groups;
+  const groupsByMembers = new Map();
+  capabilityBuckets.forEach((subscriptions, capability) => {
+    if (subscriptions.length < 2) return;
+    const key = subscriptions.map((sub) => sub._id).sort().join(":");
+    if (!groupsByMembers.has(key)) groupsByMembers.set(key, { subscriptions, sharedCapabilities: [] });
+    groupsByMembers.get(key).sharedCapabilities.push(capability);
+  });
+
+  const strongestGroup = Array.from(groupsByMembers.values()).sort(
+    (a, b) => b.subscriptions.length - a.subscriptions.length
+      || b.sharedCapabilities.length - a.sharedCapabilities.length
+  )[0];
+
+  return strongestGroup ? [{
+    ...strongestGroup,
+    requiresAmountMatch: false,
+    detectionRule: "strongest_shared_capability",
+  }] : [];
 }
 
 export function getCapabilityLabel(capability) {
