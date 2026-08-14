@@ -26,6 +26,7 @@ import {
 
 import {
   fetchCategoryDetail,
+  updateCategoryBudget,
 } from "../api/expenseCategoryApi";
 
 import "../styles/cashFlow.css";
@@ -52,6 +53,13 @@ const formatMoney = (
         2,
     }
   )}`;
+};
+
+const getBudgetStatus = (percentage) => {
+  if (percentage > 100) return "Over Budget";
+  if (percentage >= 80) return "Near Limit";
+  if (percentage >= 60) return "Watch";
+  return "Safe";
 };
 
 export default function ExpenseCategoryDetailPage() {
@@ -89,6 +97,12 @@ export default function ExpenseCategoryDetailPage() {
   const [error, setError] =
     useState("");
 
+  const [budgetInput, setBudgetInput] =
+    useState("");
+
+  const [budgetLoading, setBudgetLoading] =
+    useState(false);
+
   useEffect(() => {
     const load =
       async () => {
@@ -117,6 +131,37 @@ export default function ExpenseCategoryDetailPage() {
     slug,
     period,
   ]);
+
+  const handleBudgetUpdate = async () => {
+    const budget = Number(budgetInput);
+
+    if (!Number.isFinite(budget) || budget <= 0) {
+      window.alert("Please enter a valid budget greater than 0.");
+      return;
+    }
+
+    try {
+      setBudgetLoading(true);
+
+      await updateCategoryBudget(
+        slug,
+        budget
+      );
+
+      setBudgetInput("");
+
+      const result = await fetchCategoryDetail(
+        slug,
+        period
+      );
+
+      setData(result);
+    } catch (error) {
+      window.alert("Could not update budget.");
+    } finally {
+      setBudgetLoading(false);
+    }
+  };
 
   const changePeriod = (
     nextPeriod
@@ -229,6 +274,31 @@ export default function ExpenseCategoryDetailPage() {
                 {/* Budget / Spend Card */}
 
                 <section className="ec-budget-card">
+                  <div className="ec-budget-control">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={budgetInput}
+                      onChange={(event) =>
+                        setBudgetInput(event.target.value)
+                      }
+                      placeholder="Set budget"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={handleBudgetUpdate}
+                      disabled={budgetLoading}
+                    >
+                      {budgetLoading
+                        ? "Saving..."
+                        : data.summary.budget
+                          ? "Update Budget"
+                          : "Set Budget"}
+                    </button>
+                  </div>
+
                   <div className="ec-budget-top">
                     <div>
                       <span>
@@ -304,12 +374,9 @@ export default function ExpenseCategoryDetailPage() {
                         </span>
 
                         <strong>
-                          {data
-                            .summary
-                            .remaining <
-                          0
-                            ? "Over Limit"
-                            : "Within Budget"}
+                          {getBudgetStatus(
+                            data.summary.percentageUsed || 0
+                          )}
                         </strong>
                       </div>
                     </>

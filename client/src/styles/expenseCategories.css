@@ -950,3 +950,63 @@
     width: 100%;
   }
 }
+
+/* =========================================
+   DETAIL PAGE BUDGET CONTROL
+   ========================================= */
+
+.ec-budget-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.ec-budget-control input {
+  width: 150px;
+  padding: 10px 12px;
+  border: 1px solid var(--ec-border);
+  border-radius: 10px;
+  outline: none;
+  color: var(--ec-text);
+  background: #ffffff;
+  font-size: 11px;
+}
+
+.ec-budget-control input:focus {
+  border-color: var(--ec-primary);
+}
+
+.ec-budget-control button {
+  padding: 10px 15px;
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  background: var(--ec-primary);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.ec-budget-control button:hover {
+  opacity: 0.9;
+}
+
+.ec-budget-control button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+@media (max-width: 700px) {
+  .ec-budget-control {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ec-budget-control input,
+  .ec-budget-control button {
+    width: 100%;
+  }
+}

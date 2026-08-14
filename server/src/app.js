@@ -15,6 +15,7 @@ import cashFlowRoutes from "./routes/cashFlowRoutes.js";
 import incomeRoutes from "./routes/incomeRoutes.js";
 import incomeTemplateRoutes from "./routes/incomeTemplateRoutes.js";
 import recommendationRoutes from "./routes/recommendationRoutes.js";
+import usageAnalyticsRoutes from "./routes/usageAnalyticsRoutes.js";
 import expenseCategoryRoutes from "./routes/expenseCategoryRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 
@@ -97,6 +98,7 @@ app.use(
 );
 
 app.use("/api/recommendations", recommendationRoutes);
+app.use("/api/usage-analytics", usageAnalyticsRoutes);
 
 /* =========================
    Cash Flow routes

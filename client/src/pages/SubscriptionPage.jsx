@@ -106,35 +106,6 @@ function normalizeCapabilities(caps = []) {
   });
 }
 
-function buildOverlapGroups(subs) {
-  const capabilityBuckets = new Map();
-  subs.forEach((sub) => {
-    normalizeCapabilities(sub.capabilities).forEach((capability) => {
-      if (!capabilityBuckets.has(capability)) capabilityBuckets.set(capability, []);
-      capabilityBuckets.get(capability).push(sub);
-    });
-  });
-
-  const groupsByMembers = new Map();
-  capabilityBuckets.forEach((subscriptions, capability) => {
-    if (subscriptions.length < 2) return;
-    const key = subscriptions.map((sub) => sub._id).sort().join(":");
-    if (!groupsByMembers.has(key)) groupsByMembers.set(key, { subscriptions, sharedCapabilities: [] });
-    groupsByMembers.get(key).sharedCapabilities.push(capability);
-  });
-
-  const strongestGroup = Array.from(groupsByMembers.values()).sort(
-    (a, b) => b.subscriptions.length - a.subscriptions.length
-      || b.sharedCapabilities.length - a.sharedCapabilities.length
-  )[0];
-
-  return strongestGroup ? [{
-    ...strongestGroup,
-    requiresAmountMatch: false,
-    detectionRule: "strongest_shared_capability",
-  }] : [];
-}
-
 function getCapabilityLabel(capability) {
   return CAPABILITY_LABELS[capability] || capability;
 }
@@ -145,6 +116,7 @@ export default function SubscriptionPage() {
   const { user, logout } = useAuth();
 
   const [subscriptions, setSubscriptions] = useState([]);
+  const [overlapGroups, setOverlapGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -216,8 +188,12 @@ export default function SubscriptionPage() {
   const fetchSubscriptions = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/subscriptions");
-      setSubscriptions(res.data.subscriptions || []);
+      const [subscriptionsResponse, overlapResponse] = await Promise.all([
+        api.get("/subscriptions"),
+        api.get("/subscriptions/overlap"),
+      ]);
+      setSubscriptions(subscriptionsResponse.data.subscriptions || []);
+      setOverlapGroups(overlapResponse.data.overlapGroups || []);
       setError("");
     } catch (err) {
       console.error("Failed to fetch subscriptions:", err);
@@ -255,11 +231,6 @@ export default function SubscriptionPage() {
   const cancelledSubs = useMemo(
     () => subscriptions.filter((sub) => sub.status === "cancelled"),
     [subscriptions]
-  );
-
-  const overlapGroups = useMemo(
-    () => buildOverlapGroups(activeSubs),
-    [activeSubs]
   );
 
   const hasOverlap = overlapGroups.length > 0;
