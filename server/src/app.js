@@ -18,6 +18,8 @@ import recommendationRoutes from "./routes/recommendationRoutes.js";
 import usageAnalyticsRoutes from "./routes/usageAnalyticsRoutes.js";
 import expenseCategoryRoutes from "./routes/expenseCategoryRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
+import clientRoutes from "./routes/clientRoutes.js";
+import profitabilityRoutes from "./routes/profitabilityRoutes.js";
 
 const app = express();
 
@@ -135,6 +137,16 @@ app.use(
 app.use(
   "/api/income-templates",
   incomeTemplateRoutes
+);
+
+app.use(
+  "/api/clients",
+  clientRoutes
+);
+
+app.use(
+  "/api/profitability",
+  profitabilityRoutes
 );
 
 /* =========================

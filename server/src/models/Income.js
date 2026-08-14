@@ -33,6 +33,11 @@ const incomeSchema = new mongoose.Schema(
       trim: true,
     },
 
+    clientProject: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ClientProject",
+    },
+
     date: {
       type: Date,
       required: [true, "Income date is required"],

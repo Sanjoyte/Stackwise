@@ -8,6 +8,7 @@ import {
   AlertTriangle,
   Activity,
   ChartPie,
+  CircleDollarSign,
 } from "lucide-react";
 
 import {
@@ -81,6 +82,13 @@ const navigationItems = [
   path: "/category-spending",
   enabled: true,
 },
+  {
+    label: "Profitability",
+    shortLabel: "Profit",
+    icon: CircleDollarSign,
+    path: "/profitability",
+    enabled: true,
+  },
 ];
 
 function NavigationItem({

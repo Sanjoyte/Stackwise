@@ -231,6 +231,35 @@ export default function LoginSuccessPage() {
                     className="ml-4 shrink-0 transition group-hover:translate-x-1"
                   />
                 </button>
+
+                {/* =========================
+                    PROFITABILITY
+                    ========================= */}
+                <button
+                  type="button"
+                  onClick={() => navigate("/profitability")}
+                  className="group flex w-full items-center justify-between rounded-3xl bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-5 text-left text-white shadow-lg shadow-amber-200 transition hover:-translate-y-0.5 hover:shadow-xl"
+                >
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-amber-100">
+                      Client Analysis
+                    </p>
+
+                    <h3 className="mt-1 text-lg font-bold">
+                      Profitability
+                    </h3>
+
+                    <p className="mt-1 text-xs text-amber-100">
+                      Visualize revenue vs. costs per client/project to
+                      reveal your most profitable relationships.
+                    </p>
+                  </div>
+
+                  <ArrowRight
+                    size={22}
+                    className="ml-4 shrink-0 transition group-hover:translate-x-1"
+                  />
+                </button>
               </div>
             </section>
           </div>

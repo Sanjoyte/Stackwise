@@ -1,18 +1,25 @@
 import RecurringIncomeTemplate from "../models/RecurringIncomeTemplate.js";
 import Income from "../models/Income.js";
+import { ensureClientProject } from "./clientController.js";
 
 // @desc    Create a new recurring income template
 // @route   POST /api/income-templates
 // @access  Private
 export const createTemplate = async (req, res, next) => {
   try {
-    const { templateName, amount, currency, source, clientName, frequency, status, expectedDate } = req.body;
+    const { templateName, amount, currency, source, clientName, frequency, status, expectedDate, clientProject } = req.body;
 
     if (!templateName || amount === undefined || !source || !expectedDate) {
       return res.status(400).json({
         success: false,
         message: "Template name, amount, source, and expected date are required",
       });
+    }
+
+    let clientProjectId = clientProject || null;
+    if (clientName && !clientProjectId) {
+      const client = await ensureClientProject({ userId: req.user._id, name: clientName });
+      clientProjectId = client?._id || null;
     }
 
     const template = await RecurringIncomeTemplate.create({
@@ -22,6 +29,7 @@ export const createTemplate = async (req, res, next) => {
       currency: currency || req.user.baseCurrency || "USD",
       source,
       clientName,
+      clientProject: clientProjectId,
       frequency: frequency || "monthly",
       status: status || "active",
       expectedDate: new Date(expectedDate),
@@ -77,7 +85,7 @@ export const updateTemplate = async (req, res, next) => {
       });
     }
 
-    const { templateName, amount, currency, source, clientName, frequency, status, expectedDate } = req.body;
+    const { templateName, amount, currency, source, clientName, frequency, status, expectedDate, clientProject } = req.body;
 
     const updates = {};
     if (templateName !== undefined) updates.templateName = templateName;
@@ -85,9 +93,15 @@ export const updateTemplate = async (req, res, next) => {
     if (currency !== undefined) updates.currency = currency;
     if (source !== undefined) updates.source = source;
     if (clientName !== undefined) updates.clientName = clientName;
+    if (clientProject !== undefined) updates.clientProject = clientProject;
     if (frequency !== undefined) updates.frequency = frequency;
     if (status !== undefined) updates.status = status;
     if (expectedDate !== undefined) updates.expectedDate = new Date(expectedDate);
+
+    if ((clientName !== undefined || clientProject) && !updates.clientProject) {
+      const client = await ensureClientProject({ userId: req.user._id, name: clientName || template.clientName });
+      updates.clientProject = client?._id || null;
+    }
 
     template = await RecurringIncomeTemplate.findByIdAndUpdate(
       req.params.id,
@@ -167,6 +181,7 @@ export const logFromTemplate = async (req, res, next) => {
       currency: template.currency,
       source: template.source,
       clientName: template.clientName,
+      clientProject: template.clientProject,
       date: date ? new Date(date) : new Date(),
       notes: notes || `Logged from template: ${template.templateName}`,
       linkedTemplate: template._id,

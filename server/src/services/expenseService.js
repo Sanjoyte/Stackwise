@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 import Expense from "../models/Expense.js";
 import { getCategoryOptions } from "./expenseCategoryService.js";
+import { ensureClientProject } from "../controllers/clientController.js";
 import { getSubscriptionExpenseRows } from "./subscriptionExpenseService.js";
 import {
   SUPPORTED_CURRENCIES,
@@ -55,6 +56,7 @@ export const validateExpenseInput = ({ input, categories, strictDate = false }) 
   const dateValue = cleanText(candidate.date);
   const date = new Date(dateValue);
   const dateOnlyIsInvalid = /^\d{4}-\d{2}-\d{2}$/.test(dateValue) && !isValidDateOnly(dateValue);
+  const clientName = cleanText(candidate.clientName);
   const merchant = cleanText(candidate.merchant);
   const paymentMethod = cleanText(candidate.paymentMethod);
   const notes = cleanText(candidate.notes);
@@ -79,6 +81,7 @@ export const validateExpenseInput = ({ input, categories, strictDate = false }) 
   if (!["business", "personal"].includes(expenseType)) {
     errors.push("Expense type must be business or personal");
   }
+  if (clientName.length > 100) errors.push("Client/Project name cannot exceed 100 characters");
   if (merchant.length > 100) errors.push("Merchant cannot exceed 100 characters");
   if (paymentMethod.length > 80) errors.push("Payment method cannot exceed 80 characters");
   if (notes.length > 500) errors.push("Notes cannot exceed 500 characters");
@@ -93,6 +96,7 @@ export const validateExpenseInput = ({ input, categories, strictDate = false }) 
       date,
       category,
       expenseType,
+      clientName,
       merchant,
       paymentMethod,
       notes,
@@ -108,7 +112,19 @@ export const createExpenseRecord = async ({ userId, input, source = "manual" }) 
 
   if (!validation.valid) fail(validation.errors[0]);
 
-  return Expense.create({ user: userId, ...validation.value, source });
+  const value = { ...validation.value };
+
+  // Resolve clientProject either from the posted id or auto-create from clientName.
+  if (input.clientProject || value.clientName) {
+    if (input.clientProject) {
+      value.clientProject = input.clientProject;
+    } else if (value.clientName) {
+      const client = await ensureClientProject({ userId, name: value.clientName });
+      value.clientProject = client?._id || null;
+    }
+  }
+
+  return Expense.create({ user: userId, ...value, source });
 };
 
 const normalizeStoredExpense = (expense) => ({
@@ -240,6 +256,7 @@ export const updateExpenseRecord = async ({ userId, expenseId, input }) => {
     date: input.date ?? expense.date.toISOString(),
     category: input.category ?? expense.category,
     expenseType: input.expenseType ?? expense.expenseType,
+    clientName: input.clientName ?? expense.clientName ?? "",
     merchant: input.merchant ?? expense.merchant,
     paymentMethod: input.paymentMethod ?? expense.paymentMethod,
     notes: input.notes ?? expense.notes,
@@ -248,7 +265,19 @@ export const updateExpenseRecord = async ({ userId, expenseId, input }) => {
 
   if (!validation.valid) fail(validation.errors[0]);
 
-  Object.assign(expense, validation.value);
+  const value = { ...validation.value };
+
+  // Resolve clientProject either from the posted id or auto-create from clientName.
+  if (input.clientProject !== undefined) {
+    value.clientProject = input.clientProject;
+  } else if (value.clientName) {
+    const client = await ensureClientProject({ userId, name: value.clientName });
+    value.clientProject = client?._id || null;
+  } else if (input.clientName === "") {
+    value.clientProject = null;
+  }
+
+  Object.assign(expense, value);
   return expense.save();
 };
 

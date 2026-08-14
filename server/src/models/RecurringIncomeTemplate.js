@@ -39,6 +39,11 @@ const recurringIncomeTemplateSchema = new mongoose.Schema(
       trim: true,
     },
 
+    clientProject: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ClientProject",
+    },
+
     frequency: {
       type: String,
       enum: ["weekly", "bi-weekly", "monthly", "quarterly", "annual"],

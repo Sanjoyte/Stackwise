@@ -1,11 +1,12 @@
 import Income from "../models/Income.js";
+import { ensureClientProject } from "./clientController.js";
 
 // @desc    Create a new income
 // @route   POST /api/incomes
 // @access  Private
 export const createIncome = async (req, res, next) => {
   try {
-    const { amount, currency, source, clientName, date, notes, linkedTemplate } = req.body;
+    const { amount, currency, source, clientName, date, notes, linkedTemplate, clientProject } = req.body;
 
     if (amount === undefined || !source || !date) {
       return res.status(400).json({
@@ -14,12 +15,19 @@ export const createIncome = async (req, res, next) => {
       });
     }
 
+    let clientProjectId = clientProject || null;
+    if (clientName && !clientProjectId) {
+      const client = await ensureClientProject({ userId: req.user._id, name: clientName });
+      clientProjectId = client?._id || null;
+    }
+
     const income = await Income.create({
       user: req.user._id,
       amount,
       currency: currency || req.user.baseCurrency || "USD",
       source,
       clientName,
+      clientProject: clientProjectId,
       date: new Date(date),
       notes,
       linkedTemplate,
@@ -106,15 +114,21 @@ export const updateIncome = async (req, res, next) => {
       });
     }
 
-    const { amount, currency, source, clientName, date, notes } = req.body;
+    const { amount, currency, source, clientName, date, notes, clientProject } = req.body;
 
     const updates = {};
     if (amount !== undefined) updates.amount = amount;
     if (currency !== undefined) updates.currency = currency;
     if (source !== undefined) updates.source = source;
     if (clientName !== undefined) updates.clientName = clientName;
+    if (clientProject !== undefined) updates.clientProject = clientProject;
     if (date !== undefined) updates.date = new Date(date);
     if (notes !== undefined) updates.notes = notes;
+
+    if ((clientName !== undefined || clientProject) && !updates.clientProject) {
+      const client = await ensureClientProject({ userId: req.user._id, name: clientName || income.clientName });
+      updates.clientProject = client?._id || null;
+    }
 
     income = await Income.findByIdAndUpdate(
       req.params.id,

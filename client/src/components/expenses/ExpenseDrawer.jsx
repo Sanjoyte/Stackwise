@@ -1,12 +1,15 @@
 import {
   Calendar,
+  ChevronDown,
   ExternalLink,
   ImagePlus,
+  Plus,
   ReceiptText,
   Trash2,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { fetchClients, createClient, deleteClient } from "../../api/profitabilityApi";
 
 import {
   createExpense,
@@ -26,6 +29,7 @@ const emptyForm = (currency) => ({
   date: today(),
   category: "",
   expenseType: "business",
+  clientName: "",
   merchant: "",
   paymentMethod: "",
   notes: "",
@@ -40,6 +44,7 @@ const formFromExpense = (expense, currency) =>
         date: expense.date ? new Date(expense.date).toISOString().slice(0, 10) : today(),
         category: expense.category?.slug || "",
         expenseType: expense.expenseType || "business",
+        clientName: expense.clientName || "",
         merchant: expense.merchant || "",
         paymentMethod: expense.paymentMethod || "",
         notes: expense.notes || "",
@@ -60,38 +65,96 @@ export default function ExpenseDrawer({
   const [removeReceipt, setRemoveReceipt] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [clients, setClients] = useState([]);
+  const [showNewClientInput, setShowNewClientInput] = useState(false);
+  const [newClientName, setNewClientName] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetchClients()
+      .then((result) => {
+        if (active) setClients(result);
+      })
+      .catch(() => {
+        if (active) setClients([]);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const selectedFileLabel = useMemo(
     () => receiptFile?.name || "JPG or PNG, up to 5 MB",
     [receiptFile]
   );
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+  const selectedClient = clients.find(
+    (client) => String(client.name).toLowerCase() === String(form.clientName || "").toLowerCase()
+  ) || null;
+
+  const handleClientSelect = (clientId) => {
+    if (!clientId) {
+      setForm((current) => ({ ...current, clientName: "" }));
+    } else {
+      const selected = clients.find((client) => String(client._id) === String(clientId));
+      setForm((current) => ({ ...current, clientName: selected ? selected.name : "" }));
+    }
+    setDropdownOpen(false);
+    setShowNewClientInput(false);
+    setNewClientName("");
+  };
+
+  const handleDeleteClient = async (event, client) => {
+    event.stopPropagation();
+    if (!window.confirm(`Delete "${client.name}"? This only removes it from the dropdown — historical records keep their name.`)) return;
+    try {
+      await deleteClient(client._id);
+      setClients((prev) => prev.filter((item) => String(item._id) !== String(client._id)));
+      if (String(form.expenseType) !== "personal" && String(form.clientName).toLowerCase() === String(client.name).toLowerCase()) {
+        setForm((current) => ({ ...current, clientName: "" }));
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not delete client/project.");
+    }
+    setDropdownOpen(false);
+  };
+
+  const handleAddNewClient = async (event) => {
+    if (event?.preventDefault) event.preventDefault();
+    const name = newClientName.trim();
+    if (!name) {
+      setError("Please enter a client/project name.");
+      return;
+    }
+    try {
+      const created = await createClient(name);
+      setClients((prev) => {
+        if (prev.some((item) => String(item._id) === String(created._id))) return prev;
+        return [...prev, created].sort((a, b) => a.name.localeCompare(b.name));
+      });
+      if (form.expenseType !== "personal") {
+        setForm((current) => ({ ...current, clientName: created.name }));
+      }
+      setShowNewClientInput(false);
+      setNewClientName("");
+      setError("");
+    } catch (err) {
+      setError(err.response?.data?.message || "Could not add client/project.");
+    }
   };
 
   const handleFile = (event) => {
     const file = event.target.files?.[0] || null;
-    setError("");
+    if (file) {
+      setReceiptFile(file);
+      setRemoveReceipt(false);
+    }
+  };
 
-    if (!file) {
-      setReceiptFile(null);
-      return;
-    }
-    if (!["image/jpeg", "image/png"].includes(file.type)) {
-      setError("Receipts must be JPG, JPEG, or PNG images.");
-      event.target.value = "";
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Receipt images must be 5 MB or smaller.");
-      event.target.value = "";
-      return;
-    }
-
-    setReceiptFile(file);
-    setRemoveReceipt(false);
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
   };
 
   const validate = () => {
@@ -140,8 +203,7 @@ export default function ExpenseDrawer({
             "warning"
           );
           setError(
-            receiptError.response?.data?.message ||
-              "Expense saved, but the receipt upload failed. Choose the image and save again."
+            receiptError.response?.data?.message || "Expense saved, but the receipt upload failed. Choose the image and save again."
           );
           return;
         }
@@ -252,27 +314,95 @@ export default function ExpenseDrawer({
                 <button
                   type="button"
                   key={type}
-                  onClick={() => setForm((current) => ({ ...current, expenseType: type }))}
-                  className={`rounded-lg px-3 py-2.5 text-sm font-bold capitalize transition ${
-                    form.expenseType === type
-                      ? "bg-white text-indigo-600 shadow-sm"
-                      : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
+                  onClick={() => {
+                    setForm((current) => ({ ...current, expenseType: type }));
+                    // When switching to personal, clear client/project selection
+                    if (type === "personal") {
+                      setForm((c) => ({ ...c, clientName: "" }));
+                    }
+                  }}
+                  className={`rounded-lg px-3 py-2.5 text-sm font-bold capitalize transition ${form.expenseType === type ? "bg-white text-indigo-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                   {type}
-                </button>
-              ))}
+                  </button>
+                ))}
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ExpenseField label="Merchant">
-              <input name="merchant" value={form.merchant} onChange={handleChange} placeholder="e.g. Star Tech" />
-            </ExpenseField>
-            <ExpenseField label="Payment Method">
-              <input name="paymentMethod" value={form.paymentMethod} onChange={handleChange} placeholder="e.g. Card" />
-            </ExpenseField>
-          </div>
+          {/* Client / Project section - only shown for business expenses */}
+          {form.expenseType !== "personal" && (
+            <div>
+              <span className="drawer-label mb-1.5 block font-semibold text-slate-700">
+                Client / Project (Optional)
+              </span>
+              <div className="space-y-2">
+                {/* Custom dropdown trigger button */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="drawer-input-container flex w-full items-center justify-between gap-2 bg-white px-3 py-2.5 text-left"
+                  >
+                    <span className={`text-base ${selectedClient ? "text-slate-900 capitalize" : "text-slate-400"}`}>
+                      {selectedClient ? selectedClient.name : "No client/project"}
+                    </span>
+                    <ChevronDown size={16} className={`text-slate-400 transition ${dropdownOpen ? "rotate-180" : ""}`} />
+                  </button>
+
+                  {dropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setDropdownOpen(false)} />
+                      <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-xl">
+                        <button
+                          type="button"
+                          onClick={() => handleClientSelect("")}
+                          className={`flex w-full items-center px-3 py-2.5 text-left text-sm transition hover:bg-indigo-50 ${!selectedClient ? "bg-indigo-50 font-bold text-indigo-600" : "text-slate-600"}`}
+                        >
+                          No client/project
+                        </button>
+                        {clients.map((client) => {
+                          const isSelected = selectedClient && String(selectedClient._id) === String(client._id);
+                          return (
+                            <div
+                              key={client._id}
+                              className={`flex items-center justify-between px-3 py-2 transition hover:bg-indigo-50 ${isSelected ? "bg-indigo-50" : ""}`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleClientSelect(client._id)}
+                                className="flex-1 text-left text-sm capitalize text-slate-800"
+                              >
+                                {client.name}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => handleDeleteClient(e, client)}
+                                className="ml-2 grid h-7 w-7 shrink-0 place-items-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-500"
+                                title={`Delete ${client.name}`}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                <button type="button" onClick={() => setShowNewClientInput(true)}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 transition hover:text-indigo-700">
+                  <Plus size={13} /> Add new client/project
+                </button>
+              </div>
+            </div>
+          )}
+
+          <ExpenseField label="Merchant">
+            <input name="merchant" value={form.merchant} onChange={handleChange} placeholder="e.g. Star Tech" />
+          </ExpenseField>
+          <ExpenseField label="Payment Method">
+            <input name="paymentMethod" value={form.paymentMethod} onChange={handleChange} placeholder="e.g. Card" />
+          </ExpenseField>
 
           <ExpenseField label="Notes">
             <textarea
@@ -285,53 +415,51 @@ export default function ExpenseDrawer({
             />
           </ExpenseField>
 
-          <div>
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <label className="drawer-label font-semibold text-slate-700">Receipt Image</label>
-              {effectiveExpense?.receipt?.url && !removeReceipt && (
-                <a
-                  href={effectiveExpense.receipt.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700"
-                >
-                  View receipt <ExternalLink size={13} />
-                </a>
-              )}
-            </div>
-
-            <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-indigo-200 bg-white px-4 py-4 transition hover:border-indigo-400 hover:bg-indigo-50/40">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-600">
-                <ImagePlus size={19} />
-              </span>
-              <span className="min-w-0 flex-1">
-                <strong className="block truncate text-sm text-slate-700">
-                  {receiptFile ? "Receipt selected" : effectiveExpense?.receipt && !removeReceipt ? "Replace receipt" : "Choose image"}
-                </strong>
-                <small className="block truncate text-xs text-slate-400">{selectedFileLabel}</small>
-              </span>
-              <input type="file" accept="image/jpeg,image/png" onChange={handleFile} className="sr-only" />
-            </label>
-
-            {effectiveExpense?.receipt && !removeReceipt && !receiptFile && (
-              <button
-                type="button"
-                onClick={() => setRemoveReceipt(true)}
-                className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:text-red-600"
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <label className="drawer-label font-semibold text-slate-700">Receipt Image</label>
+            {effectiveExpense?.receipt?.url && !removeReceipt && (
+              <a
+                href={effectiveExpense.receipt.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-700"
               >
-                <Trash2 size={13} /> Remove existing receipt
-              </button>
-            )}
-            {removeReceipt && (
-              <button
-                type="button"
-                onClick={() => setRemoveReceipt(false)}
-                className="mt-2 text-xs font-semibold text-indigo-600"
-              >
-                Keep existing receipt
-              </button>
+                View receipt <ExternalLink size={13} />
+              </a>
             )}
           </div>
+
+          <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-indigo-200 bg-white px-4 py-4 transition hover:border-indigo-400 hover:bg-indigo-50/40">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-600">
+              <ImagePlus size={19} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <strong className="block truncate text-sm text-slate-700">
+                {receiptFile ? "Receipt selected" : effectiveExpense?.receipt && !removeReceipt ? "Replace receipt" : "Choose image"}
+              </strong>
+              <small className="block truncate text-xs text-slate-400">{selectedFileLabel}</small>
+            </span>
+            <input type="file" accept="image/jpeg,image/png" onChange={handleFile} className="sr-only" />
+          </label>
+
+          {effectiveExpense?.receipt && !removeReceipt && !receiptFile && (
+            <button
+              type="button"
+              onClick={() => setRemoveReceipt(true)}
+              className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:text-red-600"
+            >
+              <Trash2 size={13} /> Remove existing receipt
+            </button>
+          )}
+          {removeReceipt && (
+            <button
+              type="button"
+              onClick={() => setRemoveReceipt(false)}
+              className="mt-2 text-xs font-semibold text-indigo-600"
+            >
+              Keep existing receipt
+            </button>
+          )}
 
           <div className="mt-auto grid grid-cols-2 gap-3 border-t border-indigo-100 pt-5">
             <button

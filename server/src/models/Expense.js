@@ -71,6 +71,18 @@ const expenseSchema = new mongoose.Schema(
       enum: ["business", "personal"],
       required: [true, "Expense type is required"],
     },
+    clientName: {
+      type: String,
+      trim: true,
+      maxlength: [100, "Client/Project name cannot exceed 100 characters"],
+      default: "",
+    },
+
+    clientProject: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ClientProject",
+    },
+
     merchant: {
       type: String,
       trim: true,

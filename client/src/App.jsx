@@ -1,13 +1,7 @@
-import {
-  Navigate,
-  Route,
-  Routes,
-} from "react-router";
+import { Navigate, Route, Routes } from "react-router";
 
-import {
-  ProtectedRoute,
-  PublicRoute,
-} from "./components/RouteGuards";
+
+import { ProtectedRoute, PublicRoute } from "./components/RouteGuards";
 
 import AuthPage from "./pages/AuthPage";
 import LoginSuccessPage from "./pages/LoginSuccessPage";
@@ -21,6 +15,8 @@ import UsageAnalyticsPage from "./pages/UsageAnalyticsPage";
 import ExpenseCategoryDetailPage from "./pages/ExpenseCategoryDetailPage";
 import CategorySpendingPage from "./pages/CategorySpendingPage";
 import ExpensesPage from "./pages/ExpensesPage";
+import ProfitabilityPage from "./pages/ProfitabilityPage";
+import ClientProfitabilityPage from "./pages/ClientProfitabilityPage";
 
 export default function App() {
   return (
@@ -119,6 +115,16 @@ export default function App() {
         }
       />
 
+      <Route
+        path="/profitability/:clientId"
+        element={<ProtectedRoute><ClientProfitabilityPage /></ProtectedRoute>}
+      />
+
+      <Route
+        path="/profitability"
+        element={<ProtectedRoute><ProfitabilityPage /></ProtectedRoute>}
+      />
+
       {/* =========================
           AI OVERLAP PAGE
           Dedicated overlap detection page
@@ -135,20 +141,12 @@ export default function App() {
 
       <Route
         path="/overlap"
-        element={
-          <ProtectedRoute>
-            <OverlapPage />
-          </ProtectedRoute>
-        }
+        element={<ProtectedRoute><OverlapPage /></ProtectedRoute>}
       />
 
       <Route
         path="/ai-overlap"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
+        element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}
       />
 
       {/* =========================
@@ -157,43 +155,35 @@ export default function App() {
       <Route
         path="/"
         element={
-          <Navigate
-            to="/login"
-            replace
-          />
+          <Navigate to="/login" replace />
         }
       />
 
       <Route
-  path="/expense-categories/:slug"
-  element={
-    <ProtectedRoute>
-      <ExpenseCategoryDetailPage />
-    </ProtectedRoute>
-  }
-/>
-<Route
-  path="/category-spending"
-  element={
-    <ProtectedRoute>
-      <CategorySpendingPage />
-    </ProtectedRoute>
-  }
-/>
+        path="/expense-categories/:slug"
+        element={
+          <ProtectedRoute>
+            <ExpenseCategoryDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/category-spending"
+        element={
+          <ProtectedRoute>
+            <CategorySpendingPage />
+          </ProtectedRoute>
+        }
+      />
       {/* =========================
           UNKNOWN ROUTES
           ========================= */}
       <Route
         path="*"
         element={
-          <Navigate
-            to="/login"
-            replace
-          />
+          <Navigate to="/login" replace />
         }
       />
     </Routes>
-
-    
   );
 }
