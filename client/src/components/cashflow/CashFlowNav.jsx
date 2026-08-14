@@ -55,7 +55,8 @@ const navigationItems = [
   {
     label: "Expenses",
     icon: ReceiptText,
-    enabled: false,
+    path: "/expenses",
+    enabled: true,
   },
 
   {

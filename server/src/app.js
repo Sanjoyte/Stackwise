@@ -16,6 +16,7 @@ import incomeRoutes from "./routes/incomeRoutes.js";
 import incomeTemplateRoutes from "./routes/incomeTemplateRoutes.js";
 import recommendationRoutes from "./routes/recommendationRoutes.js";
 import expenseCategoryRoutes from "./routes/expenseCategoryRoutes.js";
+import expenseRoutes from "./routes/expenseRoutes.js";
 
 const app = express();
 
@@ -44,7 +45,7 @@ app.use(
 
 app.use(
   express.json({
-    limit: "10kb",
+    limit: "1mb",
   })
 );
 
@@ -122,6 +123,11 @@ app.use(
 app.use(
   "/api/expense-categories",
   expenseCategoryRoutes
+);
+
+app.use(
+  "/api/expenses",
+  expenseRoutes
 );
 
 app.use(

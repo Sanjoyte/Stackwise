@@ -19,6 +19,7 @@ import IncomePage from "./pages/IncomePage";
 import RecommendationsPage from "./pages/RecommendationsPage";
 import ExpenseCategoryDetailPage from "./pages/ExpenseCategoryDetailPage";
 import CategorySpendingPage from "./pages/CategorySpendingPage";
+import ExpensesPage from "./pages/ExpensesPage";
 
 export default function App() {
   return (
@@ -108,6 +109,15 @@ export default function App() {
         }
       />
 
+      <Route
+        path="/expenses"
+        element={
+          <ProtectedRoute>
+            <ExpensesPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* =========================
           AI OVERLAP PAGE
           Dedicated overlap detection page
@@ -181,4 +191,3 @@ export default function App() {
     
   );
 }
-

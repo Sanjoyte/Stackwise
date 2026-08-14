@@ -1,13 +1,9 @@
 import mongoose from "mongoose";
 import ExpenseCategory from "../models/ExpenseCategory.js";
 import { DEFAULT_EXPENSE_CATEGORIES } from "../data/defaultExpenseCategories.js";
+import { getSubscriptionExpenseRows } from "./subscriptionExpenseService.js";
 
 const USD_TO_BDT = 120;
-const ENTERTAINMENT = [
-  "netflix", "spotify", "youtube", "disney", "prime video",
-  "hoichoi", "chorki", "bongo", "hulu", "hbo", "apple music"
-];
-
 const slugify = (v = "") =>
   String(v).toLowerCase().trim()
     .replace(/&/g, "")
@@ -101,25 +97,6 @@ const expenseDate = (doc) =>
     doc.createdAt
   );
 
-const subStart = (doc) =>
-  toDate(
-    doc.startDate,
-    doc.subscriptionStartDate,
-    doc.billingDate,
-    doc.createdAt,
-    doc.renewalDate,
-    doc.nextRenewalDate
-  );
-
-const subEnd = (doc) =>
-  toDate(
-    doc.cancelledAt,
-    doc.canceledAt,
-    doc.endDate,
-    doc.expiredAt,
-    doc.expiresAt
-  );
-
 const getRange = (period, previous = false) => {
   const now = new Date();
   const year = now.getFullYear();
@@ -146,123 +123,6 @@ const inRange = (date, range) =>
   date &&
   date >= range.start &&
   date < range.end;
-
-const getCycle = (subscription) => {
-  const cycle = String(
-    subscription.billingCycle ??
-    subscription.billingFrequency ??
-    subscription.frequency ??
-    subscription.interval ??
-    "once"
-  ).toLowerCase();
-
-  if (["monthly", "month"].includes(cycle)) return "monthly";
-  if (["weekly", "week"].includes(cycle)) return "weekly";
-  if (["quarterly", "quarter"].includes(cycle)) return "quarterly";
-
-  if (
-    ["yearly", "annual", "annually", "year"].includes(cycle)
-  ) {
-    return "yearly";
-  }
-
-  if (
-    ["semiannual", "semi-annually", "half-yearly"].includes(cycle)
-  ) {
-    return "semiannual";
-  }
-
-  return "once";
-};
-
-const nextCharge = (date, cycle) => {
-  const next = new Date(date);
-
-  if (cycle === "weekly") {
-    next.setDate(next.getDate() + 7);
-  } else if (cycle === "monthly") {
-    next.setMonth(next.getMonth() + 1);
-  } else if (cycle === "quarterly") {
-    next.setMonth(next.getMonth() + 3);
-  } else if (cycle === "semiannual") {
-    next.setMonth(next.getMonth() + 6);
-  } else if (cycle === "yearly") {
-    next.setFullYear(next.getFullYear() + 1);
-  } else {
-    return null;
-  }
-
-  return next;
-};
-
-const chargeDates = (subscription) => {
-  const start = subStart(subscription);
-  if (!start) return [];
-
-  const now = new Date();
-  const end = subEnd(subscription);
-  const limit = end && end < now ? end : now;
-
-  if (start > limit) return [];
-
-  const cycle = getCycle(subscription);
-
-  if (cycle === "once") return [start];
-
-  const dates = [];
-  let current = new Date(start);
-  let guard = 0;
-
-  while (current <= limit && guard++ < 1000) {
-    dates.push(new Date(current));
-
-    current = nextCharge(current, cycle);
-
-    if (!current) break;
-  }
-
-  return dates;
-};
-
-const skipSubscription = (subscription) =>
-  ["inactive", "deleted"].includes(
-    String(subscription.status || "").toLowerCase()
-  );
-
-const subscriptionCategory = (subscription) => {
-  const category = String(
-    subscription.category?.name ||
-    subscription.category ||
-    subscription.categoryName ||
-    ""
-  ).trim().toLowerCase();
-
-  const entertainmentCategories = [
-    "entertainment",
-    "streaming",
-    "music",
-    "movies",
-  ];
-
-  if (entertainmentCategories.includes(category)) {
-    return "Entertainment";
-  }
-
-  const name = String(
-    subscription.name ??
-    subscription.toolName ??
-    subscription.serviceName ??
-    subscription.title ??
-    ""
-  ).toLowerCase();
-
-  if (ENTERTAINMENT.some((item) => name.includes(item))) {
-    return "Entertainment";
-  }
-
-  // All other subscription/tool categories are grouped here.
-  return "Software & Subscriptions";
-};
 
 export const getCategoryOptions = async (userId) => {
   const saved = await ExpenseCategory.find({ user: userId })
@@ -342,7 +202,7 @@ const loadData = async (userId) => {
   ] = await Promise.all([
     getCategoryOptions(userId),
     getUserDocuments("expenses", userId),
-    getUserDocuments("subscriptions", userId),
+    getSubscriptionExpenseRows(userId),
     getBaseCurrency(userId),
   ]);
 
@@ -384,31 +244,18 @@ export const getExpenseCategorySpending = async ({
     );
   });
 
-  subscriptions.forEach((subscription) => {
-    if (skipSubscription(subscription)) return;
+  subscriptions.forEach((subscriptionExpense) => {
+    const date = expenseDate(subscriptionExpense);
+    if (!inRange(date, range)) return;
 
-    const value =
-      amount(subscription, base);
-
+    const value = amount(subscriptionExpense, base);
     if (value <= 0) return;
 
-    const slug =
-      slugify(
-        subscriptionCategory(
-          subscription
-        )
-      );
-
-    chargeDates(subscription)
-      .forEach((date) => {
-        if (inRange(date, range)) {
-          addTotal(
-            totals,
-            slug,
-            value
-          );
-        }
-      });
+    addTotal(
+      totals,
+      subscriptionExpense.category?.slug || "software-subscriptions",
+      value
+    );
   });
 
   const result =
@@ -516,62 +363,27 @@ const getTransactions = ({
       }));
 
   subscriptions.forEach(
-    (subscription) => {
+    (subscriptionExpense) => {
+      const date = expenseDate(subscriptionExpense);
       if (
-        skipSubscription(
-          subscription
-        ) ||
-        slugify(
-          subscriptionCategory(
-            subscription
-          )
-        ) !== slug
+        subscriptionExpense.category?.slug !== slug ||
+        !inRange(date, range)
       ) {
         return;
       }
 
-      const value =
-        amount(
-          subscription,
-          base
-        );
-
+      const value = amount(subscriptionExpense, base);
       if (value <= 0) return;
 
-      const title =
-        subscription.toolName ??
-        subscription.name ??
-        subscription.serviceName ??
-        subscription.title ??
-        "Subscription";
-
-      chargeDates(subscription)
-        .forEach((date) => {
-          if (
-            !inRange(
-              date,
-              range
-            )
-          ) {
-            return;
-          }
-
-          rows.push({
-            id:
-              `${subscription._id}-${date.toISOString()}`,
-
-            title,
-            amount: value,
-            currency: base,
-            date,
-
-            notes:
-              `${getCycle(subscription)} subscription`,
-
-            source:
-              "subscription",
-          });
-        });
+      rows.push({
+        id: subscriptionExpense._id,
+        title: subscriptionExpense.description,
+        amount: value,
+        currency: base,
+        date,
+        notes: subscriptionExpense.notes,
+        source: "subscription",
+      });
     }
   );
 
