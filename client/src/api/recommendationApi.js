@@ -6,7 +6,7 @@ export async function fetchAlternativeRecommendations() {
 }
 
 export async function updateSubscriptionUsage(subscriptionId, usagePercentage) {
-  const response = await api.put(`/subscriptions/${subscriptionId}`, {
+  const response = await api.put(`/recommendations/usage/${subscriptionId}`, {
     usagePercentage: Number(usagePercentage),
   });
   return response.data.subscription;

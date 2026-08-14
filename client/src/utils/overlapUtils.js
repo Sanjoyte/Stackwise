@@ -75,41 +75,6 @@ export function normalizeCapabilities(caps = []) {
   });
 }
 
-export function getSharedCapabilities(subA, subB) {
-  const capsA = normalizeCapabilities(subA.capabilities);
-  const capsB = normalizeCapabilities(subB.capabilities);
-  return capsA.filter((value) => capsB.includes(value));
-}
-
-export function buildOverlapGroups(subs) {
-  const capabilityBuckets = new Map();
-  subs.forEach((sub) => {
-    normalizeCapabilities(sub.capabilities).forEach((capability) => {
-      if (!capabilityBuckets.has(capability)) capabilityBuckets.set(capability, []);
-      capabilityBuckets.get(capability).push(sub);
-    });
-  });
-
-  const groupsByMembers = new Map();
-  capabilityBuckets.forEach((subscriptions, capability) => {
-    if (subscriptions.length < 2) return;
-    const key = subscriptions.map((sub) => sub._id).sort().join(":");
-    if (!groupsByMembers.has(key)) groupsByMembers.set(key, { subscriptions, sharedCapabilities: [] });
-    groupsByMembers.get(key).sharedCapabilities.push(capability);
-  });
-
-  const strongestGroup = Array.from(groupsByMembers.values()).sort(
-    (a, b) => b.subscriptions.length - a.subscriptions.length
-      || b.sharedCapabilities.length - a.sharedCapabilities.length
-  )[0];
-
-  return strongestGroup ? [{
-    ...strongestGroup,
-    requiresAmountMatch: false,
-    detectionRule: "strongest_shared_capability",
-  }] : [];
-}
-
 export function getCapabilityLabel(capability) {
   return CAPABILITY_LABELS[capability] || capability;
 }

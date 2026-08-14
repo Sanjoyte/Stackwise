@@ -6,6 +6,7 @@ import {
   WalletCards,
   Sparkles,
   AlertTriangle,
+  Activity,
 } from "lucide-react";
 
 import {
@@ -33,6 +34,14 @@ const navigationItems = [
   icon: WalletCards,
   path: "/income",
   enabled: true,
+  },
+
+  {
+    label: "Usage Analytics",
+    shortLabel: "Usage",
+    icon: Activity,
+    path: "/usage-analytics",
+    enabled: true,
   },
 
   {

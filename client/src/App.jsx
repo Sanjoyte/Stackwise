@@ -17,6 +17,7 @@ import OverlapPage from "./pages/OverlapPage";
 import CashFlowPage from "./pages/CashFlowPage";
 import IncomePage from "./pages/IncomePage";
 import RecommendationsPage from "./pages/RecommendationsPage";
+import UsageAnalyticsPage from "./pages/UsageAnalyticsPage";
 import ExpenseCategoryDetailPage from "./pages/ExpenseCategoryDetailPage";
 
 export default function App() {
@@ -111,6 +112,11 @@ export default function App() {
           AI OVERLAP PAGE
           Dedicated overlap detection page
           ========================= */}
+      <Route
+        path="/usage-analytics"
+        element={<ProtectedRoute><UsageAnalyticsPage /></ProtectedRoute>}
+      />
+
       <Route
         path="/recommendations"
         element={<ProtectedRoute><RecommendationsPage /></ProtectedRoute>}
