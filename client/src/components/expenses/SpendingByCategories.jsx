@@ -7,7 +7,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import {
   fetchCategorySpending,
-  updateCategoryBudget,
 } from "../../api/expenseCategoryApi";
 
 import AddCategoryModal from "./AddCategoryModal";
@@ -167,31 +166,7 @@ export default function SpendingByCategories({ period = "monthly" }) {
       setLoading(false);
     }
   };
-  const handleBudget = async (event, category) => {
-  event.stopPropagation();
 
-  const input = window.prompt(
-    `Enter monthly budget for ${category.name}:`,
-    category.monthlyBudget ?? ""
-  );
-
-  if (input === null) return;
-
-  const budget = Number(input);
-
-  if (!Number.isFinite(budget) || budget <= 0) {
-    window.alert("Please enter a valid budget greater than 0.");
-    return;
-  }
-
-  try {
-    await updateCategoryBudget(category.slug, budget);
-    await loadCategories();
-  } catch (error) {
-    console.error("Budget update error:", error);
-    window.alert("Could not update budget.");
-  }
-};
 
   useEffect(() => {
     loadCategories();
@@ -216,18 +191,14 @@ export default function SpendingByCategories({ period = "monthly" }) {
 
   const getProgress = (category) => {
     const amount = Number(category.amount || 0);
-    const budget = Number(category.budget || 0);
+    const totalSpent = Number(data?.totalSpent || 0);
 
-    if (budget > 0) return Math.min(100, (amount / budget) * 100);
-
-    if (Number(data?.totalSpent) > 0) {
-      return Math.min(100, (amount / Number(data.totalSpent)) * 100);
+    if (totalSpent > 0) {
+      return Math.min(100, (amount / totalSpent) * 100);
     }
 
     return 0;
-  };
-
-  return (
+  };  return (
     <>
       <section className="mt-6 overflow-hidden rounded-[26px] border border-indigo-100 bg-white shadow-[0_10px_35px_rgba(68,55,130,0.04)]">
 
@@ -363,15 +334,6 @@ export default function SpendingByCategories({ period = "monthly" }) {
                                   #{index + 1}
                                 </span>
                               )}
-
-                              {/* Budget Status Badge */}
-                              {budgetStatus && (
-                                <span
-                                  className={`rounded-full border px-2 py-0.5 text-[8px] font-extrabold uppercase tracking-wide ${budgetStatus.className}`}
-                                >
-                                  {budgetStatus.label}
-                                </span>
-                              )}
                             </div>
 
                             <p className="mt-0.5 text-[9px] text-slate-400">
@@ -423,30 +385,8 @@ export default function SpendingByCategories({ period = "monthly" }) {
                         {/* Bottom Details */}
                         <div className="mt-1.5 flex items-center justify-between">
                           <span className="text-[8px] font-medium text-slate-400">
-                            {hasBudget
-                              ? `${Math.round(budgetStatus.percentage)}% used`
-                              : `${Math.round(progress)}% of total spending`}
+                            {Math.round(progress)}% of total spending
                           </span>
-
-                          {hasBudget && (
-                            <span
-                              className={`text-[8px] font-semibold ${
-                                Number(category.amount) > Number(category.budget)
-                                  ? "text-red-500"
-                                  : "text-slate-400"
-                              }`}
-                            >
-                              {Number(category.amount) > Number(category.budget)
-                                ? `${formatMoney(
-                                    Number(category.amount) -
-                                      Number(category.budget)
-                                  )} over budget`
-                                : `${formatMoney(
-                                    Number(category.budget) -
-                                      Number(category.amount)
-                                  )} remaining`}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>
