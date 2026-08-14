@@ -1,988 +1,852 @@
 import mongoose from "mongoose";
-
 import ExpenseCategory from "../models/ExpenseCategory.js";
+import { DEFAULT_EXPENSE_CATEGORIES } from "../data/defaultExpenseCategories.js";
 
-import {
-  DEFAULT_EXPENSE_CATEGORIES,
-} from "../data/defaultExpenseCategories.js";
+const USD_TO_BDT = 120;
+const ENTERTAINMENT = [
+  "netflix", "spotify", "youtube", "disney", "prime video",
+  "hoichoi", "chorki", "bongo", "hulu", "hbo", "apple music"
+];
 
-/* =========================================
-   HELPERS
-   ========================================= */
-
-const slugify = (value = "") =>
-  String(value)
-    .toLowerCase()
-    .trim()
+const slugify = (v = "") =>
+  String(v).toLowerCase().trim()
     .replace(/&/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-const roundMoney = (value) =>
-  Math.round(
-    (Number(value || 0) + Number.EPSILON) *
-      100
-  ) / 100;
+const round = (v) =>
+  Math.round((Number(v || 0) + Number.EPSILON) * 100) / 100;
 
-const getExpenseAmount = (expense) => {
-  const rawAmount =
-    expense.amount ??
-    expense.total ??
-    expense.value ??
-    expense.cost ??
-    0;
-
-  const amount = Number(rawAmount);
-
-  return Number.isFinite(amount)
-    ? amount
-    : 0;
+const normalizeCurrency = (v, fallback = "BDT") => {
+  const c = String(v || fallback).trim().toUpperCase();
+  return c === "$" ? "USD" : c === "৳" ? "BDT" : c;
 };
 
-const getExpenseDate = (expense) => {
-  const rawDate =
-    expense.date ??
-    expense.expenseDate ??
-    expense.paidAt ??
-    expense.createdAt;
+const convert = (value, from, to) => {
+  const n = Math.abs(Number(value) || 0);
+  const f = normalizeCurrency(from, to);
+  const t = normalizeCurrency(to);
 
-  if (!rawDate) {
-    return null;
+  if (f === t) return n;
+  if (f === "USD" && t === "BDT") return n * USD_TO_BDT;
+  if (f === "BDT" && t === "USD") return n / USD_TO_BDT;
+
+  return n;
+};
+
+const amount = (doc, base) =>
+  convert(
+    doc.amount ?? doc.total ?? doc.value ?? doc.cost ?? doc.price ?? 0,
+    doc.currency ?? doc.currencyCode ?? base,
+    base
+  );
+
+const getUserDocuments = async (collection, userId) => {
+  const db = mongoose.connection.db;
+  if (!db) return [];
+
+  const id = String(userId);
+  const filters = [
+    { user: id },
+    { userId: id },
+    { owner: id },
+  ];
+
+  if (mongoose.Types.ObjectId.isValid(userId)) {
+    const oid = new mongoose.Types.ObjectId(userId);
+
+    filters.push(
+      { user: oid },
+      { userId: oid },
+      { owner: oid }
+    );
   }
 
-  const date = new Date(rawDate);
-
-  return Number.isNaN(date.getTime())
-    ? null
-    : date;
+  return db.collection(collection).find({ $or: filters }).toArray();
 };
 
-/* =========================================
-   PERIOD RANGE
-   ========================================= */
+const getBaseCurrency = async (userId) => {
+  const db = mongoose.connection.db;
+  if (!db) return "BDT";
 
-const getPeriodRange = (period) => {
+  const query = mongoose.Types.ObjectId.isValid(userId)
+    ? {
+        $or: [
+          { _id: new mongoose.Types.ObjectId(userId) },
+          { _id: String(userId) },
+        ],
+      }
+    : { _id: String(userId) };
+
+  const user = await db.collection("users").findOne(query);
+
+  return normalizeCurrency(user?.baseCurrency || "BDT");
+};
+
+const toDate = (...values) => {
+  const raw = values.find(Boolean);
+  if (!raw) return null;
+
+  const date = new Date(raw);
+
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const expenseDate = (doc) =>
+  toDate(
+    doc.date,
+    doc.expenseDate,
+    doc.paidAt,
+    doc.paymentDate,
+    doc.createdAt
+  );
+
+const subStart = (doc) =>
+  toDate(
+    doc.startDate,
+    doc.subscriptionStartDate,
+    doc.billingDate,
+    doc.createdAt,
+    doc.renewalDate,
+    doc.nextRenewalDate
+  );
+
+const subEnd = (doc) =>
+  toDate(
+    doc.cancelledAt,
+    doc.canceledAt,
+    doc.endDate,
+    doc.expiredAt,
+    doc.expiresAt
+  );
+
+const getRange = (period, previous = false) => {
   const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
 
   if (period === "yearly") {
-    return {
-      start: new Date(
-        now.getFullYear(),
-        0,
-        1
-      ),
+    const y = previous ? year - 1 : year;
 
-      end: new Date(
-        now.getFullYear() + 1,
-        0,
-        1
-      ),
+    return {
+      start: new Date(y, 0, 1),
+      end: new Date(y + 1, 0, 1),
     };
   }
 
-  return {
-    start: new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      1
-    ),
+  const m = previous ? month - 1 : month;
 
-    end: new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      1
-    ),
+  return {
+    start: new Date(year, m, 1),
+    end: new Date(year, m + 1, 1),
   };
 };
 
-const getPreviousPeriodRange = (
-  period
-) => {
-  const now = new Date();
-
-  if (period === "yearly") {
-    return {
-      start: new Date(
-        now.getFullYear() - 1,
-        0,
-        1
-      ),
-
-      end: new Date(
-        now.getFullYear(),
-        0,
-        1
-      ),
-    };
-  }
-
-  return {
-    start: new Date(
-      now.getFullYear(),
-      now.getMonth() - 1,
-      1
-    ),
-
-    end: new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      1
-    ),
-  };
-};
-
-const isWithinRange = (
-  date,
-  range
-) =>
+const inRange = (date, range) =>
   date &&
   date >= range.start &&
   date < range.end;
 
-/* =========================================
-   USER EXPENSES
-   ========================================= */
+const getCycle = (subscription) => {
+  const cycle = String(
+    subscription.billingCycle ??
+    subscription.billingFrequency ??
+    subscription.frequency ??
+    subscription.interval ??
+    "once"
+  ).toLowerCase();
 
-/*
- * Reads directly from MongoDB's
- * "expenses" collection.
- *
- * This makes the category analytics
- * independent from the exact Expense
- * model implementation.
- */
+  if (["monthly", "month"].includes(cycle)) return "monthly";
+  if (["weekly", "week"].includes(cycle)) return "weekly";
+  if (["quarterly", "quarter"].includes(cycle)) return "quarterly";
 
-const getUserExpenses = async (
-  userId
-) => {
-  const database =
-    mongoose.connection.db;
-
-  if (!database) {
-    return [];
+  if (
+    ["yearly", "annual", "annually", "year"].includes(cycle)
+  ) {
+    return "yearly";
   }
 
-  const objectId =
-    new mongoose.Types.ObjectId(
-      userId
-    );
-
-  const stringId =
-    String(userId);
-
-  try {
-    return await database
-      .collection("expenses")
-      .find({
-        $or: [
-          {
-            user: objectId,
-          },
-          {
-            userId: objectId,
-          },
-          {
-            owner: objectId,
-          },
-          {
-            user: stringId,
-          },
-          {
-            userId: stringId,
-          },
-          {
-            owner: stringId,
-          },
-        ],
-      })
-      .toArray();
-  } catch (error) {
-    console.error(
-      "Expense category source error:",
-      error
-    );
-
-    return [];
+  if (
+    ["semiannual", "semi-annually", "half-yearly"].includes(cycle)
+  ) {
+    return "semiannual";
   }
+
+  return "once";
 };
 
-/* =========================================
-   GET ALL CATEGORY OPTIONS
-   ========================================= */
+const nextCharge = (date, cycle) => {
+  const next = new Date(date);
 
-export const getCategoryOptions =
-  async (userId) => {
-    const customCategories =
-      await ExpenseCategory.find({
-        user: userId,
-      })
-        .sort({
-          createdAt: 1,
-        })
-        .lean();
+  if (cycle === "weekly") {
+    next.setDate(next.getDate() + 7);
+  } else if (cycle === "monthly") {
+    next.setMonth(next.getMonth() + 1);
+  } else if (cycle === "quarterly") {
+    next.setMonth(next.getMonth() + 3);
+  } else if (cycle === "semiannual") {
+    next.setMonth(next.getMonth() + 6);
+  } else if (cycle === "yearly") {
+    next.setFullYear(next.getFullYear() + 1);
+  } else {
+    return null;
+  }
 
-    const defaults =
-      DEFAULT_EXPENSE_CATEGORIES.map(
-        (category) => ({
-          ...category,
+  return next;
+};
 
-          monthlyBudget: null,
+const chargeDates = (subscription) => {
+  const start = subStart(subscription);
+  if (!start) return [];
 
-          isCustom: false,
-        })
-      );
+  const now = new Date();
+  const end = subEnd(subscription);
+  const limit = end && end < now ? end : now;
 
-    const custom =
-      customCategories.map(
-        (category) => ({
-          id: category._id,
+  if (start > limit) return [];
 
-          name: category.name,
+  const cycle = getCycle(subscription);
 
-          slug: category.slug,
+  if (cycle === "once") return [start];
 
-          icon: category.icon,
+  const dates = [];
+  let current = new Date(start);
+  let guard = 0;
 
-          theme: category.theme,
+  while (current <= limit && guard++ < 1000) {
+    dates.push(new Date(current));
 
-          monthlyBudget:
-            category.monthlyBudget,
+    current = nextCharge(current, cycle);
 
-          isCustom: true,
-        })
-      );
+    if (!current) break;
+  }
 
-    return [
-      ...defaults,
-      ...custom,
-    ];
+  return dates;
+};
+
+const skipSubscription = (subscription) =>
+  ["inactive", "deleted"].includes(
+    String(subscription.status || "").toLowerCase()
+  );
+
+const subscriptionCategory = (subscription) => {
+  const category = String(
+    subscription.category?.name ||
+    subscription.category ||
+    subscription.categoryName ||
+    ""
+  ).trim().toLowerCase();
+
+  const entertainmentCategories = [
+    "entertainment",
+    "streaming",
+    "music",
+    "movies",
+  ];
+
+  if (entertainmentCategories.includes(category)) {
+    return "Entertainment";
+  }
+
+  const name = String(
+    subscription.name ??
+    subscription.toolName ??
+    subscription.serviceName ??
+    subscription.title ??
+    ""
+  ).toLowerCase();
+
+  if (ENTERTAINMENT.some((item) => name.includes(item))) {
+    return "Entertainment";
+  }
+
+  // All other subscription/tool categories are grouped here.
+  return "Software & Subscriptions";
+};
+
+export const getCategoryOptions = async (userId) => {
+  const saved = await ExpenseCategory.find({ user: userId })
+    .sort({ createdAt: 1 })
+    .lean();
+
+  const savedMap = new Map(saved.map((c) => [c.slug, c]));
+  const defaultSlugs = new Set(
+    DEFAULT_EXPENSE_CATEGORIES.map((c) => c.slug)
+  );
+
+  const defaults = DEFAULT_EXPENSE_CATEGORIES.map((category) => ({
+    ...category,
+    monthlyBudget:
+      savedMap.get(category.slug)?.monthlyBudget ?? null,
+    isCustom: false,
+  }));
+
+  const custom = saved
+    .filter((category) => !defaultSlugs.has(category.slug))
+    .map((category) => ({
+      id: category._id,
+      name: category.name,
+      slug: category.slug,
+      icon: category.icon,
+      theme: category.theme,
+      monthlyBudget: category.monthlyBudget,
+      isCustom: true,
+    }));
+
+  return [...defaults, ...custom];
+};
+
+const makeCategoryMap = (categories) =>
+  new Map(
+    categories
+      .filter((category) => category.id)
+      .map((category) => [
+        String(category.id),
+        category.name,
+      ])
+  );
+
+const expenseCategory = (expense, map) =>
+  expense.category?.name ||
+  (typeof expense.category === "string"
+    ? expense.category
+    : null) ||
+  expense.categoryName ||
+  map.get(
+    String(
+      expense.categoryId ??
+      expense.category
+    )
+  ) ||
+  "Other";
+
+const addTotal = (totals, slug, value) => {
+  const row =
+    totals.get(slug) || {
+      amount: 0,
+      transactionCount: 0,
+    };
+
+  row.amount += value;
+  row.transactionCount++;
+
+  totals.set(slug, row);
+};
+
+const loadData = async (userId) => {
+  const [
+    categories,
+    expenses,
+    subscriptions,
+    base,
+  ] = await Promise.all([
+    getCategoryOptions(userId),
+    getUserDocuments("expenses", userId),
+    getUserDocuments("subscriptions", userId),
+    getBaseCurrency(userId),
+  ]);
+
+  return {
+    categories,
+    expenses,
+    subscriptions,
+    base,
   };
-
-/* =========================================
-   NORMALIZE CATEGORY NAME
-   ========================================= */
-
-const getExpenseCategoryName = (
-  expense,
-  customCategoryMap
-) => {
-  /*
-   * Supports:
-   *
-   * category: "Food & Groceries"
-   *
-   * categoryName: "Food & Groceries"
-   *
-   * category: {
-   *   name: "Food & Groceries"
-   * }
-   *
-   * categoryId: ObjectId(...)
-   */
-
-  if (
-    expense.category &&
-    typeof expense.category ===
-      "object" &&
-    expense.category.name
-  ) {
-    return expense.category.name;
-  }
-
-  if (
-    typeof expense.category ===
-    "string"
-  ) {
-    return expense.category;
-  }
-
-  if (expense.categoryName) {
-    return expense.categoryName;
-  }
-
-  const categoryId =
-    expense.categoryId ??
-    expense.category;
-
-  if (categoryId) {
-    const mappedCategory =
-      customCategoryMap.get(
-        String(categoryId)
-      );
-
-    if (mappedCategory) {
-      return mappedCategory;
-    }
-  }
-
-  return "Other";
 };
 
-/* =========================================
-   GET CATEGORY SPENDING
-   ========================================= */
+export const getExpenseCategorySpending = async ({
+  userId,
+  period = "monthly",
+}) => {
+  const {
+    categories,
+    expenses,
+    subscriptions,
+    base,
+  } = await loadData(userId);
 
-export const getExpenseCategorySpending =
-  async ({
-    userId,
-    period = "monthly",
-  }) => {
-    const [
-      categories,
-      expenses,
-    ] = await Promise.all([
-      getCategoryOptions(userId),
+  const range = getRange(period);
+  const map = makeCategoryMap(categories);
+  const totals = new Map();
 
-      getUserExpenses(userId),
-    ]);
+  expenses.forEach((expense) => {
+    if (!inRange(expenseDate(expense), range)) return;
 
-    const range =
-      getPeriodRange(period);
-
-    /*
-     * Maps custom category ObjectId
-     * to its category name.
-     */
-
-    const customCategoryMap =
-      new Map();
-
-    categories.forEach(
-      (category) => {
-        if (category.id) {
-          customCategoryMap.set(
-            String(category.id),
-            category.name
-          );
-        }
-      }
+    addTotal(
+      totals,
+      slugify(
+        expenseCategory(
+          expense,
+          map
+        )
+      ),
+      amount(expense, base)
     );
+  });
 
-    /*
-     * Stores totals like:
-     *
-     * entertainment => {
-     *   amount: 1200,
-     *   transactionCount: 1
-     * }
-     */
+  subscriptions.forEach((subscription) => {
+    if (skipSubscription(subscription)) return;
 
-    const categoryTotals =
-      new Map();
+    const value =
+      amount(subscription, base);
 
-    expenses.forEach(
-      (expense) => {
-        const date =
-          getExpenseDate(
-            expense
+    if (value <= 0) return;
+
+    const slug =
+      slugify(
+        subscriptionCategory(
+          subscription
+        )
+      );
+
+    chargeDates(subscription)
+      .forEach((date) => {
+        if (inRange(date, range)) {
+          addTotal(
+            totals,
+            slug,
+            value
           );
-
-        /*
-         * Ignore records outside
-         * selected month/year.
-         */
-
-        if (
-          !isWithinRange(
-            date,
-            range
-          )
-        ) {
-          return;
         }
+      });
+  });
 
-        const categoryName =
-          getExpenseCategoryName(
-            expense,
-            customCategoryMap
-          );
-
-        /*
-         * Important:
-         *
-         * "Food & Groceries"
-         * becomes
-         * "food-groceries"
-         *
-         * This matches our default
-         * category slug.
-         */
-
-        const key =
-          slugify(
-            categoryName
-          );
-
-        const amount =
-          getExpenseAmount(
-            expense
-          );
-
-        const existing =
-          categoryTotals.get(
-            key
-          ) || {
+  const result =
+    categories
+      .map((category) => {
+        const row =
+          totals.get(category.slug) || {
             amount: 0,
             transactionCount: 0,
           };
 
-        existing.amount +=
-          amount;
+        const budget =
+          category.monthlyBudget
+            ? period === "yearly"
+              ? category.monthlyBudget * 12
+              : category.monthlyBudget
+            : null;
 
-        existing.transactionCount +=
-          1;
+        return {
+          ...category,
+          amount: round(row.amount),
+          transactionCount:
+            row.transactionCount,
+          budget,
 
-        categoryTotals.set(
-          key,
-          existing
-        );
-      }
-    );
-
-    /*
-     * Merge category definitions
-     * with calculated spending.
-     */
-
-    const result =
-      categories.map(
-        (category) => {
-          const totals =
-            categoryTotals.get(
-              category.slug
-            ) || {
-              amount: 0,
-              transactionCount: 0,
-            };
-
-          /*
-           * Monthly budget remains
-           * monthly in monthly mode.
-           *
-           * In yearly mode:
-           * monthlyBudget × 12
-           */
-
-          const periodBudget =
-            category.monthlyBudget
-              ? period ===
-                "yearly"
-                ? category.monthlyBudget *
-                  12
-                : category.monthlyBudget
-              : null;
-
-          const percentageUsed =
-            periodBudget &&
-            periodBudget > 0
-              ? Math.min(
-                  100,
-                  (totals.amount /
-                    periodBudget) *
-                    100
+          percentageUsed:
+            budget
+              ? Math.round(
+                  Math.min(
+                    100,
+                    (row.amount / budget) *
+                      100
+                  )
                 )
-              : null;
-
-          return {
-            ...category,
-
-            amount:
-              roundMoney(
-                totals.amount
-              ),
-
-            transactionCount:
-              totals.transactionCount,
-
-            budget:
-              periodBudget,
-
-            percentageUsed:
-              percentageUsed ===
-              null
-                ? null
-                : Math.round(
-                    percentageUsed
-                  ),
-          };
-        }
+              : null,
+        };
+      })
+      .sort(
+        (a, b) =>
+          b.amount - a.amount
       );
 
-    /*
-     * Categories with larger spending
-     * appear first.
-     */
+  return {
+    period,
+    currency: base,
 
-    result.sort(
-      (a, b) =>
-        b.amount -
-        a.amount
-    );
-
-    const totalSpent =
-      roundMoney(
+    totalSpent:
+      round(
         result.reduce(
-          (
-            total,
-            category
-          ) =>
-            total +
-            category.amount,
+          (sum, category) =>
+            sum + category.amount,
           0
         )
-      );
+      ),
 
-    return {
-      period,
-
-      totalSpent,
-
-      categories: result,
-    };
+    categories: result,
   };
+};
 
-/* =========================================
-   GET SINGLE CATEGORY DETAILS
-   ========================================= */
-
-export const getExpenseCategoryDetail =
-  async ({
-    userId,
-    slug,
-    period = "monthly",
-  }) => {
-    const [
-      categories,
-      expenses,
-    ] = await Promise.all([
-      getCategoryOptions(userId),
-
-      getUserExpenses(userId),
-    ]);
-
-    const category =
-      categories.find(
-        (item) =>
-          item.slug === slug
-      );
-
-    if (!category) {
-      return null;
-    }
-
-    const customCategoryMap =
-      new Map();
-
-    categories.forEach(
-      (item) => {
-        if (item.id) {
-          customCategoryMap.set(
-            String(item.id),
-            item.name
-          );
-        }
-      }
-    );
-
-    const currentRange =
-      getPeriodRange(period);
-
-    const previousRange =
-      getPreviousPeriodRange(
-        period
-      );
-
-    /*
-     * Find all expenses that
-     * belong to this category.
-     */
-
-    const matchingExpenses =
-      expenses.filter(
-        (expense) => {
-          const categoryName =
-            getExpenseCategoryName(
+const getTransactions = ({
+  expenses,
+  subscriptions,
+  slug,
+  range,
+  map,
+  base,
+}) => {
+  const rows =
+    expenses
+      .filter(
+        (expense) =>
+          slugify(
+            expenseCategory(
               expense,
-              customCategoryMap
-            );
-
-          return (
-            slugify(
-              categoryName
-            ) === slug
-          );
-        }
-      );
-
-    /*
-     * Current month/year expenses.
-     */
-
-    const currentExpenses =
-      matchingExpenses.filter(
-        (expense) =>
-          isWithinRange(
-            getExpenseDate(
-              expense
-            ),
-            currentRange
+              map
+            )
+          ) === slug &&
+          inRange(
+            expenseDate(expense),
+            range
           )
-      );
+      )
+      .map((expense) => ({
+        id: String(expense._id),
 
-    /*
-     * Previous month/year expenses.
-     */
+        title:
+          expense.title ??
+          expense.name ??
+          expense.merchant ??
+          expense.description ??
+          "Expense",
 
-    const previousExpenses =
-      matchingExpenses.filter(
-        (expense) =>
-          isWithinRange(
-            getExpenseDate(
-              expense
-            ),
-            previousRange
+        amount:
+          amount(expense, base),
+
+        currency: base,
+
+        date:
+          expenseDate(expense),
+
+        notes:
+          expense.notes ?? "",
+
+        source: "expense",
+      }));
+
+  subscriptions.forEach(
+    (subscription) => {
+      if (
+        skipSubscription(
+          subscription
+        ) ||
+        slugify(
+          subscriptionCategory(
+            subscription
           )
-      );
+        ) !== slug
+      ) {
+        return;
+      }
 
-    /*
-     * Current period total.
-     */
-
-    const currentTotal =
-      roundMoney(
-        currentExpenses.reduce(
-          (
-            total,
-            expense
-          ) =>
-            total +
-            getExpenseAmount(
-              expense
-            ),
-          0
-        )
-      );
-
-    /*
-     * Previous period total.
-     */
-
-    const previousTotal =
-      roundMoney(
-        previousExpenses.reduce(
-          (
-            total,
-            expense
-          ) =>
-            total +
-            getExpenseAmount(
-              expense
-            ),
-          0
-        )
-      );
-
-    /*
-     * Example:
-     *
-     * Previous month = 5000
-     * Current month  = 4000
-     *
-     * Savings = 20%
-     */
-
-    const savingsPercentage =
-      previousTotal > 0
-        ? Math.round(
-            ((previousTotal -
-              currentTotal) /
-              previousTotal) *
-              100
-          )
-        : 0;
-
-    const now = new Date();
-
-    let elapsedDays;
-
-    /*
-     * Used to calculate
-     * average spending per day.
-     */
-
-    if (period === "yearly") {
-      const start =
-        new Date(
-          now.getFullYear(),
-          0,
-          1
+      const value =
+        amount(
+          subscription,
+          base
         );
 
-      elapsedDays =
-        Math.max(
+      if (value <= 0) return;
+
+      const title =
+        subscription.toolName ??
+        subscription.name ??
+        subscription.serviceName ??
+        subscription.title ??
+        "Subscription";
+
+      chargeDates(subscription)
+        .forEach((date) => {
+          if (
+            !inRange(
+              date,
+              range
+            )
+          ) {
+            return;
+          }
+
+          rows.push({
+            id:
+              `${subscription._id}-${date.toISOString()}`,
+
+            title,
+            amount: value,
+            currency: base,
+            date,
+
+            notes:
+              `${getCycle(subscription)} subscription`,
+
+            source:
+              "subscription",
+          });
+        });
+    }
+  );
+
+  return rows;
+};
+
+export const getExpenseCategoryDetail = async ({
+  userId,
+  slug,
+  period = "monthly",
+}) => {
+  const {
+    categories,
+    expenses,
+    subscriptions,
+    base,
+  } = await loadData(userId);
+
+  const category =
+    categories.find(
+      (item) =>
+        item.slug === slug
+    );
+
+  if (!category) return null;
+
+  const map =
+    makeCategoryMap(categories);
+
+  const collect = (range) =>
+    getTransactions({
+      expenses,
+      subscriptions,
+      slug,
+      range,
+      map,
+      base,
+    });
+
+  const current =
+    collect(
+      getRange(period)
+    );
+
+  const previous =
+    collect(
+      getRange(
+        period,
+        true
+      )
+    );
+
+  const total =
+    round(
+      current.reduce(
+        (sum, item) =>
+          sum + item.amount,
+        0
+      )
+    );
+
+  const previousTotal =
+    round(
+      previous.reduce(
+        (sum, item) =>
+          sum + item.amount,
+        0
+      )
+    );
+
+  const now =
+    new Date();
+
+  const days =
+    period === "yearly"
+      ? Math.max(
           1,
           Math.ceil(
-            (now - start) /
-              (1000 *
-                60 *
-                60 *
-                24)
+            (now -
+              new Date(
+                now.getFullYear(),
+                0,
+                1
+              )) /
+              86400000
           )
-        );
-    } else {
-      elapsedDays =
-        Math.max(
+        )
+      : Math.max(
           1,
           now.getDate()
         );
-    }
 
-    const averagePerDay =
-      roundMoney(
-        currentTotal /
-          elapsedDays
-      );
+  const budget =
+    category.monthlyBudget
+      ? period === "yearly"
+        ? category.monthlyBudget *
+          12
+        : category.monthlyBudget
+      : null;
 
-    /*
-     * Budget calculation.
-     */
+  return {
+    category,
+    period,
+    currency: base,
 
-    const periodBudget =
-      category.monthlyBudget
-        ? period === "yearly"
-          ? category.monthlyBudget *
-            12
-          : category.monthlyBudget
-        : null;
+    summary: {
+      totalSpent: total,
 
-    const remaining =
-      periodBudget !== null
-        ? roundMoney(
-            periodBudget -
-              currentTotal
-          )
-        : null;
+      previousPeriodSpent:
+        previousTotal,
 
-    const percentageUsed =
-      periodBudget &&
-      periodBudget > 0
-        ? Math.round(
-            Math.min(
-              100,
-              (currentTotal /
-                periodBudget) *
+      savingsPercentage:
+        previousTotal
+          ? Math.round(
+              ((previousTotal -
+                total) /
+                previousTotal) *
                 100
             )
-          )
-        : null;
+          : 0,
 
-    /*
-     * Recent transactions
-     * belonging only to
-     * this selected category.
-     */
+      averagePerDay:
+        round(
+          total / days
+        ),
 
-    const recentTransactions =
-      currentExpenses
+      transactionCount:
+        current.length,
+
+      budget,
+
+      remaining:
+        budget === null
+          ? null
+          : round(
+              budget - total
+            ),
+
+      percentageUsed:
+        budget
+          ? Math.round(
+              Math.min(
+                100,
+                (total /
+                  budget) *
+                  100
+              )
+            )
+          : null,
+    },
+
+    recentTransactions:
+      current
         .sort(
           (a, b) =>
-            getExpenseDate(b) -
-            getExpenseDate(a)
+            new Date(b.date) -
+            new Date(a.date)
         )
-        .slice(0, 10)
-        .map(
-          (expense) => ({
-            id:
-              expense._id,
-
-            title:
-              expense.title ??
-              expense.name ??
-              expense.merchant ??
-              expense.description ??
-              category.name,
-
-            amount:
-              getExpenseAmount(
-                expense
-              ),
-
-            currency:
-              expense.currency ??
-              "BDT",
-
-            date:
-              getExpenseDate(
-                expense
-              ),
-
-            notes:
-              expense.notes ??
-              "",
-          })
-        );
-
-    return {
-      category,
-
-      period,
-
-      summary: {
-        totalSpent:
-          currentTotal,
-
-        previousPeriodSpent:
-          previousTotal,
-
-        savingsPercentage,
-
-        averagePerDay,
-
-        transactionCount:
-          currentExpenses.length,
-
-        budget:
-          periodBudget,
-
-        remaining,
-
-        percentageUsed,
-      },
-
-      recentTransactions,
-    };
+        .slice(0, 10),
   };
+};
 
-/* =========================================
-   CREATE CUSTOM CATEGORY
-   ========================================= */
+const fail = (
+  message,
+  statusCode
+) => {
+  const error =
+    new Error(message);
 
-export const createExpenseCategory =
-  async ({
-    userId,
-    name,
-    icon,
-    theme,
-    monthlyBudget,
-  }) => {
-    const cleanName =
-      String(name || "")
-        .trim();
+  error.statusCode =
+    statusCode;
 
-    if (!cleanName) {
-      const error =
-        new Error(
-          "Category name is required."
-        );
+  throw error;
+};
 
-      error.statusCode = 400;
+export const setCategoryBudget = async ({
+  userId,
+  slug,
+  monthlyBudget,
+}) => {
+  const budget = Number(monthlyBudget);
 
-      throw error;
-    }
+  if (!Number.isFinite(budget) || budget < 0) {
+    fail("Budget must be a valid positive number.", 400);
+  }
 
-    const slug =
-      slugify(cleanName);
+  const existing = await ExpenseCategory.findOne({
+    user: userId,
+    slug,
+  });
 
-    /*
-     * Prevent user from creating
-     * a custom category with the
-     * same name as a built-in one.
-     */
+  if (existing) {
+    existing.monthlyBudget = budget;
+    await existing.save();
+    return existing;
+  }
 
-    const defaultExists =
-      DEFAULT_EXPENSE_CATEGORIES.some(
-        (category) =>
-          category.slug ===
-          slug
-      );
+  const defaultCategory =
+    DEFAULT_EXPENSE_CATEGORIES.find(
+      (category) => category.slug === slug
+    );
 
-    if (defaultExists) {
-      const error =
-        new Error(
-          "This category already exists."
-        );
+  if (!defaultCategory) return null;
 
-      error.statusCode = 409;
+  return ExpenseCategory.create({
+    user: userId,
+    ...defaultCategory,
+    monthlyBudget: budget,
+    isCustom: false,
+  });s
+};
 
-      throw error;
-    }
+export const createExpenseCategory = async ({
+  userId,
+  name,
+  icon,
+  theme,
+  monthlyBudget,
+}) => {
+  const cleanName =
+    String(name || "")
+      .trim();
 
-    /*
-     * Prevent duplicate
-     * custom categories.
-     */
+  if (!cleanName) {
+    fail(
+      "Category name is required.",
+      400
+    );
+  }
 
-    const existing =
-      await ExpenseCategory.findOne({
-        user: userId,
-        slug,
-      });
+  const slug =
+    slugify(cleanName);
 
-    if (existing) {
-      const error =
-        new Error(
-          "You already created this category."
-        );
+  const exists =
+    DEFAULT_EXPENSE_CATEGORIES.some(
+      (category) =>
+        category.slug === slug
+    ) ||
+    await ExpenseCategory.exists({
+      user: userId,
+      slug,
+    });
 
-      error.statusCode = 409;
+  if (exists) {
+    fail(
+      "This category already exists.",
+      409
+    );
+  }
 
-      throw error;
-    }
+  const budget =
+    monthlyBudget === "" ||
+    monthlyBudget == null
+      ? null
+      : Number(monthlyBudget);
 
-    /*
-     * Validate optional budget.
-     */
+  if (
+    budget !== null &&
+    (
+      !Number.isFinite(budget) ||
+      budget < 0
+    )
+  ) {
+    fail(
+      "Monthly budget must be a valid positive number.",
+      400
+    );
+  }
 
-    let normalizedBudget =
-      null;
-
-    if (
-      monthlyBudget !== "" &&
-      monthlyBudget !== undefined &&
-      monthlyBudget !== null
-    ) {
-      normalizedBudget =
-        Number(
-          monthlyBudget
-        );
-
-      if (
-        !Number.isFinite(
-          normalizedBudget
-        ) ||
-        normalizedBudget < 0
-      ) {
-        const error =
-          new Error(
-            "Monthly budget must be a valid positive number."
-          );
-
-        error.statusCode =
-          400;
-
-        throw error;
-      }
-    }
-
-    const category =
-      await ExpenseCategory.create({
-        user: userId,
-
-        name: cleanName,
-
-        slug,
-
-        icon:
-          icon ||
-          "wallet",
-
-        theme:
-          theme ||
-          "indigo",
-
-        monthlyBudget:
-          normalizedBudget,
-      });
-
-    return category;
-  };
+  return ExpenseCategory.create({
+    user: userId,
+    name: cleanName,
+    slug,
+    icon: icon || "wallet",
+    theme: theme || "indigo",
+    monthlyBudget: budget,
+  });
+};
