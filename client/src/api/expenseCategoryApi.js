@@ -58,3 +58,14 @@ export const addExpenseCategory =
 
     return response.data.category;
   };
+  export const updateCategoryBudget = async (
+  slug,
+  monthlyBudget
+) => {
+  const response = await api.put(
+    `/expense-categories/${slug}/budget`,
+    { monthlyBudget }
+  );
+
+  return response.data.category;
+};

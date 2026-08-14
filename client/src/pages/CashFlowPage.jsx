@@ -14,7 +14,7 @@ import ForecastCard from "../components/cashflow/ForecastCard";
 import InsightCard from "../components/cashflow/InsightCard";
 import PeriodToggle from "../components/cashflow/PeriodToggle";
 import "../styles/expenseCategories.css";
-import SpendingByCategories from "../components/expenses/SpendingByCategories";
+
 
 import {
   CashFlowMobileNav,
@@ -279,9 +279,7 @@ export default function CashFlowPage() {
                   />
                 </div>
               </section>
-              <SpendingByCategories
-  period={period}
-/>
+              
             </>
           ) : null}
         </main>

@@ -143,7 +143,7 @@ export default function ExpenseCategoryDetailPage() {
                 type="button"
                 onClick={() =>
                   navigate(
-                    "/cash-flow"
+                    "/category-spending"
                   )
                 }
                 className="ec-back-button"

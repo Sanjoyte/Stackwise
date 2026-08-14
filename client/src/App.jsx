@@ -18,6 +18,7 @@ import CashFlowPage from "./pages/CashFlowPage";
 import IncomePage from "./pages/IncomePage";
 import RecommendationsPage from "./pages/RecommendationsPage";
 import ExpenseCategoryDetailPage from "./pages/ExpenseCategoryDetailPage";
+import CategorySpendingPage from "./pages/CategorySpendingPage";
 
 export default function App() {
   return (
@@ -155,7 +156,14 @@ export default function App() {
     </ProtectedRoute>
   }
 />
-
+<Route
+  path="/category-spending"
+  element={
+    <ProtectedRoute>
+      <CategorySpendingPage />
+    </ProtectedRoute>
+  }
+/>
       {/* =========================
           UNKNOWN ROUTES
           ========================= */}

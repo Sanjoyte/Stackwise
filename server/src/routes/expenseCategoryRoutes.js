@@ -5,6 +5,7 @@ import {
   getCategories,
   getCategoryDetail,
   getCategorySpending,
+  updateCategoryBudget,
 } from "../controllers/expenseCategoryController.js";
 
 import {
@@ -45,7 +46,11 @@ router.post(
   protect,
   addCategory
 );
-
+router.put(
+  "/:slug/budget",
+  protect,
+  updateCategoryBudget
+);
 /*
  * GET
  * /api/expense-categories/food-groceries?period=monthly

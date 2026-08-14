@@ -3,6 +3,7 @@ import {
   getCategoryOptions,
   getExpenseCategoryDetail,
   getExpenseCategorySpending,
+  setCategoryBudget,
 } from "../services/expenseCategoryService.js";
 
 const getPeriod = (
@@ -171,3 +172,27 @@ export const addCategory =
       return next(error);
     }
   };
+
+  export const updateCategoryBudget = async (req, res, next) => {
+  try {
+    const category = await setCategoryBudget({
+      userId: req.user._id,
+      slug: req.params.slug,
+      monthlyBudget: req.body.monthlyBudget,
+    });
+
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        message: "Expense category not found.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      category,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};

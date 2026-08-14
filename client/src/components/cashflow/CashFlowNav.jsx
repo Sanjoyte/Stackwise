@@ -6,6 +6,7 @@ import {
   WalletCards,
   Sparkles,
   AlertTriangle,
+  ChartPie,
 } from "lucide-react";
 
 import {
@@ -63,6 +64,13 @@ const navigationItems = [
     path: "/cash-flow",
     enabled: true,
   },
+  {
+  label: "Category Spending",
+  shortLabel: "Categories",
+  icon: ChartPie,
+  path: "/category-spending",
+  enabled: true,
+},
 ];
 
 function NavigationItem({

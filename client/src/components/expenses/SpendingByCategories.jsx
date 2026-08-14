@@ -5,7 +5,11 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { fetchCategorySpending } from "../../api/expenseCategoryApi";
+import {
+  fetchCategorySpending,
+  updateCategoryBudget,
+} from "../../api/expenseCategoryApi";
+
 import AddCategoryModal from "./AddCategoryModal";
 
 const ICONS = {
@@ -163,6 +167,31 @@ export default function SpendingByCategories({ period = "monthly" }) {
       setLoading(false);
     }
   };
+  const handleBudget = async (event, category) => {
+  event.stopPropagation();
+
+  const input = window.prompt(
+    `Enter monthly budget for ${category.name}:`,
+    category.monthlyBudget ?? ""
+  );
+
+  if (input === null) return;
+
+  const budget = Number(input);
+
+  if (!Number.isFinite(budget) || budget <= 0) {
+    window.alert("Please enter a valid budget greater than 0.");
+    return;
+  }
+
+  try {
+    await updateCategoryBudget(category.slug, budget);
+    await loadCategories();
+  } catch (error) {
+    console.error("Budget update error:", error);
+    window.alert("Could not update budget.");
+  }
+};
 
   useEffect(() => {
     loadCategories();
@@ -216,14 +245,14 @@ export default function SpendingByCategories({ period = "monthly" }) {
             </p>
           </div>
 
-          <button
+          {/*<button
             type="button"
             onClick={() => setIsAddOpen(true)}
             className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-[11px] font-bold text-white shadow-sm transition duration-200 hover:bg-indigo-700 hover:shadow-md active:scale-[0.98]"
           >
             <Plus size={15} />
             Add Category
-          </button>
+          </button>*/}
         </div>
 
         <div className="p-5 sm:p-6 lg:px-7">
@@ -370,6 +399,8 @@ export default function SpendingByCategories({ period = "monthly" }) {
                                   {Math.round(budgetStatus.percentage)}% of budget
                                 </p>
                               )}
+
+                              
                             </div>
 
                             <ChevronRight
