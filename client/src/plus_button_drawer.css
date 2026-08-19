@@ -1,0 +1,93 @@
+/* Plus Button Add Subs drawer classes from Figma */
+
+.drawer-bg {
+  background: #F5F3FF;
+}
+
+.drawer-card {
+  background: #FFFFFF;
+  box-shadow: 5px 4px 4px rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+}
+
+.drawer-title {
+  font-family: 'Inter';
+  font-weight: 600;
+  font-size: 21px;
+  color: #000000;
+}
+
+.drawer-input-container {
+  box-sizing: border-box;
+  background: #FFFFFF;
+  border: 1px solid #5C40D0;
+  box-shadow: 4px 4px 4px rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
+}
+
+.drawer-input-text {
+  font-family: 'Inter';
+  font-weight: 400;
+  font-size: 16px;
+  color: #1E1E1E;
+}
+
+.drawer-label {
+  font-family: 'Inter';
+  font-weight: 400;
+  font-size: 16px;
+  color: #1E1E1E;
+}
+
+.drawer-select {
+  background: #FFFFFF;
+  border: 1px solid #5C40D0;
+  border-radius: 8px;
+  font-family: 'Inter';
+  font-weight: 400;
+  font-size: 16px;
+  color: #1E1E1E;
+}
+
+.drawer-button-primary {
+  background: #5C40D0;
+  border-radius: 7px;
+  color: #FFFFFF;
+  font-family: 'Inter';
+  font-weight: 500;
+  font-size: 18px;
+}
+
+.drawer-text-muted {
+  font-family: 'Inter';
+  font-weight: 400;
+  font-size: 16px;
+  color: #9CA3AF;
+}
+
+.drawer-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(92, 64, 208, 0.08);
+  border: 1px solid rgba(92, 64, 208, 0.25);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-family: 'Inter';
+  font-weight: 500;
+  font-size: 12px;
+  color: #5C40D0;
+}
+
+.drawer-tag-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(92, 64, 208, 0.5);
+  transition: color 0.15s ease;
+  cursor: pointer;
+}
+
+.drawer-tag-chip button:hover {
+  color: #5C40D0;
+}
