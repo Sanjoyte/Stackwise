@@ -16,6 +16,9 @@ const formatUser = (user) => ({
   workType: user.workType,
   baseCurrency: user.baseCurrency,
   onboardingCompleted: user.onboardingCompleted,
+  team: user.team || null,
+  activeTeam: user.activeTeam || null,
+  teams: user.teams || [],
   createdAt: user.createdAt,
 });
 
