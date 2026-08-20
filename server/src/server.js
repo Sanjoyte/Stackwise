@@ -3,13 +3,10 @@ import { fileURLToPath } from "node:url";
 import { setServers } from "node:dns";
 import dotenv from "dotenv";
 
-<<<<<<< HEAD
 import app from "./app.js";
 import connectDB from "./config/db.js";
 import { startNotificationScheduler } from "./jobs/notificationScheduler.js";
 
-=======
->>>>>>> 817a7593fe26d9210759b66e2951cdf71926cc3e
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 

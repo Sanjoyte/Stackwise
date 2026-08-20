@@ -117,13 +117,11 @@ app.use(
   profitabilityRoutes
 );
 
-<<<<<<< HEAD
 app.use("/api/notifications", notificationRoutes);
 
 /* =========================
    404 handler
    ========================= */
-=======
 app.use(
   "/api/teams",
   teamRoutes
@@ -138,7 +136,6 @@ app.use(
   "/api/payments",
   paymentRoutes
 );
->>>>>>> 817a7593fe26d9210759b66e2951cdf71926cc3e
 
 app.use(notFound);
 
