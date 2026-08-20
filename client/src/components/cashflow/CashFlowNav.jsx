@@ -12,6 +12,7 @@ import {
   BellRing,
   Users,
   CreditCard,
+  Calculator,
 } from "lucide-react";
 
 import { NavLink } from "react-router";
@@ -90,6 +91,14 @@ const navigationItems = [
     shortLabel: "Profit",
     icon: CircleDollarSign,
     path: "/profitability",
+    enabled: true,
+  },
+
+  {
+    label: "Tax Reports",
+    shortLabel: "Tax",
+    icon: Calculator,
+    path: "/tax-reports",
     enabled: true,
   },
   {
