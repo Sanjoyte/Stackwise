@@ -9,6 +9,7 @@ import {
   deleteReceiptImage,
   uploadReceiptImage,
 } from "../services/cloudinaryService.js";
+import { scanReceiptForExpense } from "../services/receiptScanService.js";
 
 const notFound = (res) =>
   res.status(404).json({ success: false, message: "Expense not found" });
@@ -168,6 +169,35 @@ export const attachExpenseReceipt = async (req, res, next) => {
       error = new Error("Receipt upload failed. The expense remains saved.");
       error.statusCode = 502;
     }
+    return next(error);
+  }
+};
+
+// Scan-and-discard: uploads to a Cloudinary scratch folder, extracts text with the OCR
+// add-on, and destroys the scratch asset before this handler ever returns (see
+// receiptScanService.js / ocrService.js). No expense id is required or created — the response
+// carries only parsed fields, never a url or publicId. A scan can never block saving the
+// expense, so "no readable text" is a 200, not an error status.
+export const scanReceipt = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: "Choose a receipt image to scan" });
+    }
+
+    const result = await scanReceiptForExpense({
+      buffer: req.file.buffer,
+      userId: req.user._id,
+      baseCurrency: req.user.baseCurrency || "BDT",
+    });
+
+    return res.status(200).json({
+      success: true,
+      scanned: result.scanned,
+      fields: result.fields,
+      confidence: result.confidence,
+      message: result.scanned ? "Receipt scanned" : "No readable text was found on this receipt",
+    });
+  } catch (error) {
     return next(error);
   }
 };

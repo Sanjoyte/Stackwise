@@ -40,3 +40,19 @@ export const removeExpenseReceipt = async (expenseId) => {
   const response = await api.delete(`/expenses/${expenseId}/receipt`);
   return response.data.expense;
 };
+
+// Scan-and-discard: the server extracts text from the image and destroys its own upload before
+// responding, so this never returns a url or publicId — only parsed field candidates. No
+// expense id is needed or created. Returns the full envelope (not just response.data.expense)
+// because `scanned`, `fields`, and `message` are all load-bearing for the drawer UI.
+export const scanReceipt = async (file, { signal } = {}) => {
+  const formData = new FormData();
+  formData.append("receipt", file); // MUST match multer's .single("receipt") on the server
+
+  const response = await api.post("/expenses/receipt-scan", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 45000,
+    signal,
+  });
+  return response.data;
+};

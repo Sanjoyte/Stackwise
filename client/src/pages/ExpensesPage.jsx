@@ -156,8 +156,31 @@ export default function ExpensesPage() {
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const notifyAndRefresh = async (message, tone = "success") => {
+  // A save can succeed while still being invisible: e.g. a scanned receipt's date falls
+  // outside the default "This Month" filter. Widen only the specific filters that would
+  // hide this expense, so what you just saved is always visible without losing the rest
+  // of your filter selection.
+  const notifyAndRefresh = async (message, tone = "success", expense) => {
     setToast({ message, tone });
+
+    if (expense) {
+      if (type !== "all" && expense.expenseType && expense.expenseType !== type) setType("all");
+      if (category !== "all" && expense.category?.slug && expense.category.slug !== category) setCategory("all");
+      if (source !== "all" && expense.source && expense.source !== source) setSource("all");
+
+      const itemDate = expense.date ? new Date(expense.date) : null;
+      const outOfRange =
+        itemDate &&
+        !Number.isNaN(itemDate.getTime()) &&
+        ((dateRange.startDate && itemDate < new Date(`${dateRange.startDate}T00:00:00.000Z`)) ||
+          (dateRange.endDate && itemDate > new Date(`${dateRange.endDate}T23:59:59.999Z`)));
+      if (outOfRange) {
+        setPeriod("all");
+        setCustomStart("");
+        setCustomEnd("");
+      }
+    }
+
     setRefreshKey((value) => value + 1);
   };
 
