@@ -13,6 +13,7 @@ import {
   Users,
   CreditCard,
   Calculator,
+  HeartPulse,
 } from "lucide-react";
 
 import { NavLink } from "react-router";
@@ -91,6 +92,14 @@ const navigationItems = [
     shortLabel: "Profit",
     icon: CircleDollarSign,
     path: "/profitability",
+    enabled: true,
+  },
+
+  {
+    label: "Financial Health",
+    shortLabel: "Health",
+    icon: HeartPulse,
+    path: "/financial-health",
     enabled: true,
   },
 
