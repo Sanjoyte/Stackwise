@@ -3,22 +3,38 @@ import {
   ChevronDown,
   ExternalLink,
   ImagePlus,
+  Info,
+  Loader2,
   Plus,
   ReceiptText,
+  Sparkles,
   Trash2,
+  Undo2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchClients, createClient, deleteClient } from "../../api/profitabilityApi";
 
 import {
   createExpense,
   removeExpenseReceipt,
+  scanReceipt,
   updateExpense,
   uploadExpenseReceipt,
 } from "../../api/expenseApi";
 import { EXPENSE_CURRENCIES } from "../../utils/expenseCsv";
+import { mergeOcrFields, OCR_FIELDS, sanitizeOcrFields } from "../../utils/receiptAutofill";
 import "../../plus_button_drawer.css";
+
+const RECEIPT_MAX_BYTES = 5 * 1024 * 1024;
+const RECEIPT_MIME_TYPES = ["image/jpeg", "image/png"];
+
+// file.type can be "" on some Android/Windows pickers even with `accept` set on the input.
+const guessMimeFromName = (name = "") => {
+  if (/\.png$/i.test(name)) return "image/png";
+  if (/\.jpe?g$/i.test(name)) return "image/jpeg";
+  return "";
+};
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -70,6 +86,31 @@ export default function ExpenseDrawer({
   const [newClientName, setNewClientName] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
+  const [scanning, setScanning] = useState(false);
+  const [scanNotice, setScanNotice] = useState(null); // { tone: "info"|"success"|"warning", message }
+  const [ocrValues, setOcrValues] = useState({}); // field -> value OCR wrote
+  const [ocrPrevious, setOcrPrevious] = useState({}); // field -> value that was there before the FIRST scan
+
+  // Editing an existing expense: every OCR-eligible field was authored by the user at some
+  // point, so a scan there should fill nothing. The drawer remounts per expense (see
+  // ExpensesPage.jsx's `key={editingExpense?._id || "new-expense"}`), so this ref never goes stale.
+  const touchedRef = useRef(new Set(expense ? OCR_FIELDS : []));
+  const formRef = useRef(form);
+  const scanIdRef = useRef(0);
+  const abortRef = useRef(null);
+
+  useEffect(() => {
+    formRef.current = form;
+  }, [form]);
+
+  useEffect(
+    () => () => {
+      scanIdRef.current += 1;
+      abortRef.current?.abort();
+    },
+    []
+  );
+
   useEffect(() => {
     let active = true;
     fetchClients()
@@ -84,6 +125,26 @@ export default function ExpenseDrawer({
     };
   }, []);
 
+  const markTouched = (...fields) => fields.forEach((field) => touchedRef.current.add(field));
+
+  // The badge is derived from value equality, not from a Set that must be remembered to clear —
+  // any keystroke changes form[field], equality breaks, and the badge vanishes for free.
+  const ocrFilled = useMemo(
+    () => new Set(Object.keys(ocrValues).filter((field) => form[field] === ocrValues[field])),
+    [form, ocrValues]
+  );
+
+  const revertField = (field) => {
+    setForm((current) => ({ ...current, [field]: ocrPrevious[field] ?? "" }));
+    setOcrValues((prior) => {
+      const next = { ...prior };
+      delete next[field];
+      return next;
+    });
+    // Deliberately NOT marking touched: reverting restores the pre-scan default, it doesn't
+    // author a value, so a rescan of a better photo may still fill it.
+  };
+
   const selectedFileLabel = useMemo(
     () => receiptFile?.name || "JPG or PNG, up to 5 MB",
     [receiptFile]
@@ -94,6 +155,7 @@ export default function ExpenseDrawer({
   ) || null;
 
   const handleClientSelect = (clientId) => {
+    markTouched("clientName");
     if (!clientId) {
       setForm((current) => ({ ...current, clientName: "" }));
     } else {
@@ -112,6 +174,7 @@ export default function ExpenseDrawer({
       await deleteClient(client._id);
       setClients((prev) => prev.filter((item) => String(item._id) !== String(client._id)));
       if (String(form.expenseType) !== "personal" && String(form.clientName).toLowerCase() === String(client.name).toLowerCase()) {
+        markTouched("clientName");
         setForm((current) => ({ ...current, clientName: "" }));
       }
     } catch (err) {
@@ -134,6 +197,7 @@ export default function ExpenseDrawer({
         return [...prev, created].sort((a, b) => a.name.localeCompare(b.name));
       });
       if (form.expenseType !== "personal") {
+        markTouched("clientName");
         setForm((current) => ({ ...current, clientName: created.name }));
       }
       setShowNewClientInput(false);
@@ -144,16 +208,84 @@ export default function ExpenseDrawer({
     }
   };
 
-  const handleFile = (event) => {
-    const file = event.target.files?.[0] || null;
-    if (file) {
-      setReceiptFile(file);
-      setRemoveReceipt(false);
+  const handleFile = async (event) => {
+    const input = event.target;
+    const file = input.files?.[0] || null;
+    input.value = ""; // always reset: re-picking the same file must re-fire onChange
+    if (!file) return;
+
+    setScanNotice(null);
+
+    const mime = file.type || guessMimeFromName(file.name);
+    if (!RECEIPT_MIME_TYPES.includes(mime)) {
+      setScanNotice({ tone: "warning", message: "Receipts must be JPG, JPEG, or PNG images." });
+      return;
+    }
+    if (file.size > RECEIPT_MAX_BYTES) {
+      setScanNotice({ tone: "warning", message: "Receipt images must be 5 MB or smaller." });
+      return;
+    }
+
+    // Existing behavior, preserved exactly: the permanent upload still only happens on save.
+    setReceiptFile(file);
+    setRemoveReceipt(false);
+
+    const runId = ++scanIdRef.current; // bumped BEFORE abort, so a cancel reads as stale, not failed
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setScanning(true);
+
+    try {
+      const result = await scanReceipt(file, { signal: controller.signal });
+      if (runId !== scanIdRef.current) return; // stale — a later file selection already won
+
+      if (!result.scanned) {
+        setScanNotice({
+          tone: "info",
+          message: "We couldn't find any text on this image. Fill in the details manually — the receipt will still be attached when you save.",
+        });
+        return;
+      }
+
+      const { next, applied, previous } = mergeOcrFields({
+        current: formRef.current,
+        incoming: sanitizeOcrFields(result.fields, categories),
+        touched: touchedRef.current,
+      });
+      const count = Object.keys(applied).length;
+
+      if (!count) {
+        setScanNotice({ tone: "info", message: "Nothing new to fill — your existing entries were kept." });
+        return;
+      }
+
+      setForm(next);
+      setOcrValues((prior) => ({ ...prior, ...applied }));
+      // `previous` spread first so an existing entry is never overwritten — if the user scans
+      // receipt A then B without editing, revert must restore the true pre-scan value, not A's guess.
+      setOcrPrevious((prior) => ({ ...previous, ...prior }));
+      setScanNotice({
+        tone: "success",
+        message: `Filled ${count} field${count === 1 ? "" : "s"} from the receipt. Check them before saving.`,
+      });
+    } catch (scanError) {
+      if (runId !== scanIdRef.current) return;
+      if (scanError.code === "ERR_CANCELED" || scanError.name === "CanceledError") return;
+      setScanNotice({
+        tone: "warning",
+        message:
+          scanError.response?.data?.message ||
+          "We couldn't read this receipt. Enter the details manually — the image will still be saved.",
+      });
+    } finally {
+      if (runId === scanIdRef.current) setScanning(false);
     }
   };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
+    markTouched(name);
     setForm((current) => ({ ...current, [name]: value }));
   };
 
@@ -200,7 +332,8 @@ export default function ExpenseDrawer({
         } catch (receiptError) {
           await onChanged?.(
             "Expense saved, but the receipt upload failed. You can retry from this drawer.",
-            "warning"
+            "warning",
+            persisted
           );
           setError(
             receiptError.response?.data?.message || "Expense saved, but the receipt upload failed. Choose the image and save again."
@@ -211,7 +344,8 @@ export default function ExpenseDrawer({
 
       await onChanged?.(
         effectiveExpense ? "Expense updated successfully." : "Expense added successfully.",
-        "success"
+        "success",
+        persisted
       );
       onClose();
     } catch (requestError) {
@@ -258,7 +392,11 @@ export default function ExpenseDrawer({
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-5">
-          <ExpenseField label="Description *">
+          <ExpenseField
+            label="Description *"
+            fromReceipt={ocrFilled.has("description")}
+            onRevert={() => revertField("description")}
+          >
             <input
               name="description"
               value={form.description}
@@ -270,7 +408,7 @@ export default function ExpenseDrawer({
           </ExpenseField>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <ExpenseField label="Amount *">
+            <ExpenseField label="Amount *" fromReceipt={ocrFilled.has("amount")} onRevert={() => revertField("amount")}>
               <input
                 type="number"
                 min="0.01"
@@ -282,7 +420,7 @@ export default function ExpenseDrawer({
                 required
               />
             </ExpenseField>
-            <ExpenseField label="Currency *">
+            <ExpenseField label="Currency *" fromReceipt={ocrFilled.has("currency")} onRevert={() => revertField("currency")}>
               <select name="currency" value={form.currency} onChange={handleChange}>
                 {EXPENSE_CURRENCIES.map((currency) => (
                   <option key={currency} value={currency}>{currency}</option>
@@ -292,10 +430,15 @@ export default function ExpenseDrawer({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <ExpenseField label="Date *" icon={<Calendar size={15} />}>
+            <ExpenseField
+              label="Date *"
+              icon={<Calendar size={15} />}
+              fromReceipt={ocrFilled.has("date")}
+              onRevert={() => revertField("date")}
+            >
               <input type="date" name="date" value={form.date} onChange={handleChange} required />
             </ExpenseField>
-            <ExpenseField label="Category *">
+            <ExpenseField label="Category *" fromReceipt={ocrFilled.has("category")} onRevert={() => revertField("category")}>
               <select name="category" value={form.category} onChange={handleChange} required>
                 <option value="">Choose category</option>
                 {categories.map((category) => (
@@ -315,9 +458,11 @@ export default function ExpenseDrawer({
                   type="button"
                   key={type}
                   onClick={() => {
+                    markTouched("expenseType");
                     setForm((current) => ({ ...current, expenseType: type }));
                     // When switching to personal, clear client/project selection
                     if (type === "personal") {
+                      markTouched("clientName");
                       setForm((c) => ({ ...c, clientName: "" }));
                     }
                   }}
@@ -397,10 +542,14 @@ export default function ExpenseDrawer({
             </div>
           )}
 
-          <ExpenseField label="Merchant">
+          <ExpenseField label="Merchant" fromReceipt={ocrFilled.has("merchant")} onRevert={() => revertField("merchant")}>
             <input name="merchant" value={form.merchant} onChange={handleChange} placeholder="e.g. Star Tech" />
           </ExpenseField>
-          <ExpenseField label="Payment Method">
+          <ExpenseField
+            label="Payment Method"
+            fromReceipt={ocrFilled.has("paymentMethod")}
+            onRevert={() => revertField("paymentMethod")}
+          >
             <input name="paymentMethod" value={form.paymentMethod} onChange={handleChange} placeholder="e.g. Card" />
           </ExpenseField>
 
@@ -431,16 +580,53 @@ export default function ExpenseDrawer({
 
           <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-indigo-200 bg-white px-4 py-4 transition hover:border-indigo-400 hover:bg-indigo-50/40">
             <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-indigo-600">
-              <ImagePlus size={19} />
+              {scanning ? <Loader2 size={19} className="animate-spin" /> : <ImagePlus size={19} />}
             </span>
             <span className="min-w-0 flex-1">
               <strong className="block truncate text-sm text-slate-700">
-                {receiptFile ? "Receipt selected" : effectiveExpense?.receipt && !removeReceipt ? "Replace receipt" : "Choose image"}
+                {scanning
+                  ? "Scanning receipt…"
+                  : receiptFile
+                  ? "Receipt selected"
+                  : effectiveExpense?.receipt && !removeReceipt
+                  ? "Replace receipt"
+                  : "Choose image"}
               </strong>
-              <small className="block truncate text-xs text-slate-400">{selectedFileLabel}</small>
+              <small className="block truncate text-xs text-slate-400">
+                {scanning ? "Reading the text on your receipt" : selectedFileLabel}
+              </small>
             </span>
             <input type="file" accept="image/jpeg,image/png" onChange={handleFile} className="sr-only" />
           </label>
+
+          {scanNotice && (
+            <div
+              role="status"
+              aria-live="polite"
+              className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 text-xs leading-5 ${
+                scanNotice.tone === "success"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  : scanNotice.tone === "warning"
+                  ? "border-amber-200 bg-amber-50 text-amber-700"
+                  : "border-slate-200 bg-slate-50 text-slate-600"
+              }`}
+            >
+              {scanNotice.tone === "success" ? (
+                <Sparkles size={14} className="mt-0.5 shrink-0" />
+              ) : (
+                <Info size={14} className="mt-0.5 shrink-0" />
+              )}
+              <span className="flex-1">{scanNotice.message}</span>
+              <button
+                type="button"
+                onClick={() => setScanNotice(null)}
+                className="mt-0.5 shrink-0 opacity-60 hover:opacity-100"
+                aria-label="Dismiss"
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
 
           {effectiveExpense?.receipt && !removeReceipt && !receiptFile && (
             <button
@@ -484,11 +670,30 @@ export default function ExpenseDrawer({
   );
 }
 
-function ExpenseField({ label, icon, children }) {
+function ExpenseField({ label, icon, children, fromReceipt = false, onRevert }) {
   return (
     <label className="block">
       <span className="drawer-label mb-1.5 flex items-center gap-1.5 font-semibold text-slate-700">
         {icon}{label}
+        {fromReceipt && (
+          <span className="drawer-tag-chip ml-auto !px-2 !py-0.5 !text-[10px]" title="Autofilled from your receipt">
+            <Sparkles size={11} /> From receipt
+            {onRevert && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onRevert();
+                }}
+                className="ml-0.5 rounded-full opacity-70 transition hover:opacity-100"
+                aria-label={`Undo the receipt value for ${label}`}
+              >
+                <Undo2 size={11} />
+              </button>
+            )}
+          </span>
+        )}
       </span>
       <span className="drawer-input-container block bg-white px-3 py-2.5 [&_input]:w-full [&_input]:bg-transparent [&_input]:text-slate-900 [&_input]:outline-none [&_select]:w-full [&_select]:bg-transparent [&_select]:text-slate-900 [&_select]:outline-none [&_textarea]:w-full [&_textarea]:resize-none [&_textarea]:bg-transparent [&_textarea]:text-slate-900 [&_textarea]:outline-none">
         {children}
