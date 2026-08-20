@@ -10,12 +10,19 @@ const toBase64Url = (value) =>
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 
-export const isGmailConfigured = () =>
-  Boolean(
+export const isGmailConfigured = () => {
+  console.log("Gmail check:", {
+    GMAIL_CLIENT_ID: !!process.env.GMAIL_CLIENT_ID,
+    GMAIL_CLIENT_SECRET: !!process.env.GMAIL_CLIENT_SECRET,
+    GMAIL_REFRESH_TOKEN: !!process.env.GMAIL_REFRESH_TOKEN,
+  });
+
+  return Boolean(
     process.env.GMAIL_CLIENT_ID &&
       process.env.GMAIL_CLIENT_SECRET &&
       process.env.GMAIL_REFRESH_TOKEN
   );
+};
 
 const getAccessToken = async () => {
   const response = await fetch(GMAIL_TOKEN_URL, {

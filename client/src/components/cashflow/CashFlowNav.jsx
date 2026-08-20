@@ -12,6 +12,7 @@ import {
   BellRing,
   Users,
   CreditCard,
+  Calculator,
 } from "lucide-react";
 
 import { NavLink } from "react-router";
@@ -92,12 +93,22 @@ const navigationItems = [
     path: "/profitability",
     enabled: true,
   },
+
+  {
+    label: "Tax Reports",
+    shortLabel: "Tax",
+    icon: Calculator,
+    path: "/tax-reports",
+    enabled: true,
+  },
   {
     label: "Notifications",
     shortLabel: "Alerts",
     icon: BellRing,
     path: "/notifications",
+    enabled: true,
   },
+
   {
     label: "Team",
     icon: Users,

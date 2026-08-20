@@ -25,6 +25,7 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
 import teamRequestRoutes from "./routes/teamRequestRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import taxReportRoutes from "./routes/taxReportRoutes.js";
 
 const app = express();
 
@@ -117,13 +118,11 @@ app.use(
   profitabilityRoutes
 );
 
-<<<<<<< HEAD
 app.use("/api/notifications", notificationRoutes);
 
 /* =========================
    404 handler
    ========================= */
-=======
 app.use(
   "/api/teams",
   teamRoutes
@@ -138,7 +137,11 @@ app.use(
   "/api/payments",
   paymentRoutes
 );
->>>>>>> 817a7593fe26d9210759b66e2951cdf71926cc3e
+
+app.use(
+  "/api/tax-reports",
+  taxReportRoutes
+);
 
 app.use(notFound);
 
