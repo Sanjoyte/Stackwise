@@ -22,6 +22,6 @@ npm-debug.log*
 Thumbs.db
 
 # Environment files
-.env
-client/.env
-server/.env
+# .env
+# client/.env
+# server/.env
