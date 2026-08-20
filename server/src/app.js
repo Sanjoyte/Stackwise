@@ -22,17 +22,13 @@ import clientRoutes from "./routes/clientRoutes.js";
 import profitabilityRoutes from "./routes/profitabilityRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 
+import teamRoutes from "./routes/teamRoutes.js";
+import teamRequestRoutes from "./routes/teamRequestRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+
 const app = express();
 
-/* =========================
-   Security middleware
-   ========================= */
-
 app.use(helmet());
-
-/* =========================
-   CORS
-   ========================= */
 
 app.use(
   cors({
@@ -42,10 +38,6 @@ app.use(
     credentials: true,
   })
 );
-
-/* =========================
-   Body parsers
-   ========================= */
 
 app.use(
   express.json({
@@ -59,23 +51,11 @@ app.use(
   })
 );
 
-/* =========================
-   Cookies
-   ========================= */
-
 app.use(cookieParser());
-
-/* =========================
-   Development logging
-   ========================= */
 
 if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
 }
-
-/* =========================
-   Health check
-   ========================= */
 
 app.get("/api/health", (req, res) => {
   res.status(200).json({
@@ -85,45 +65,32 @@ app.get("/api/health", (req, res) => {
   });
 });
 
-/* =========================
-   Authentication routes
-   ========================= */
-
 app.use("/api/auth", authRoutes);
-
-/* =========================
-   Subscription routes
-   ========================= */
 
 app.use(
   "/api/subscriptions",
   subscriptionRoutes
 );
 
-app.use("/api/recommendations", recommendationRoutes);
-app.use("/api/usage-analytics", usageAnalyticsRoutes);
+app.use(
+  "/api/recommendations",
+  recommendationRoutes
+);
 
-/* =========================
-   Cash Flow routes
-   ========================= */
+app.use(
+  "/api/usage-analytics",
+  usageAnalyticsRoutes
+);
 
 app.use(
   "/api/cash-flow",
   cashFlowRoutes
 );
 
-/* =========================
-   Income routes
-   ========================= */
-
 app.use(
   "/api/incomes",
   incomeRoutes
 );
-
-/* =========================
-   Income Template routes
-   ========================= */
 
 app.use(
   "/api/expense-categories",
@@ -150,17 +117,30 @@ app.use(
   profitabilityRoutes
 );
 
+<<<<<<< HEAD
 app.use("/api/notifications", notificationRoutes);
 
 /* =========================
    404 handler
    ========================= */
+=======
+app.use(
+  "/api/teams",
+  teamRoutes
+);
+
+app.use(
+  "/api/team-requests",
+  teamRequestRoutes
+);
+
+app.use(
+  "/api/payments",
+  paymentRoutes
+);
+>>>>>>> 817a7593fe26d9210759b66e2951cdf71926cc3e
 
 app.use(notFound);
-
-/* =========================
-   Global error handler
-   ========================= */
 
 app.use(errorHandler);
 

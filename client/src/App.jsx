@@ -1,6 +1,5 @@
 import { Navigate, Route, Routes } from "react-router";
 
-
 import { ProtectedRoute, PublicRoute } from "./components/RouteGuards";
 
 import AuthPage from "./pages/AuthPage";
@@ -19,12 +18,12 @@ import ProfitabilityPage from "./pages/ProfitabilityPage";
 import ClientProfitabilityPage from "./pages/ClientProfitabilityPage";
 import NotificationsPage from "./pages/NotificationsPage";
 
+import TeamPage from "./pages/TeamPage";
+import PaymentsPage from "./pages/PaymentsPage";
+
 export default function App() {
   return (
     <Routes>
-      {/* =========================
-          LOGIN
-          ========================= */}
       <Route
         path="/login"
         element={
@@ -34,9 +33,6 @@ export default function App() {
         }
       />
 
-      {/* =========================
-          SIGNUP
-          ========================= */}
       <Route
         path="/signup"
         element={
@@ -46,9 +42,6 @@ export default function App() {
         }
       />
 
-      {/* =========================
-          MAIN DASHBOARD
-          ========================= */}
       <Route
         path="/dashboard"
         element={
@@ -58,10 +51,6 @@ export default function App() {
         }
       />
 
-      {/* =========================
-          LOGIN SUCCESS
-          Keep for compatibility
-          ========================= */}
       <Route
         path="/login-success"
         element={
@@ -71,9 +60,6 @@ export default function App() {
         }
       />
 
-      {/* =========================
-          SUBSCRIPTIONS
-          ========================= */}
       <Route
         path="/subscription"
         element={
@@ -83,9 +69,6 @@ export default function App() {
         }
       />
 
-      {/* =========================
-          CASH FLOW
-          ========================= */}
       <Route
         path="/cash-flow"
         element={
@@ -95,9 +78,6 @@ export default function App() {
         }
       />
 
-      {/* =========================
-          INCOME TRACKING
-          ========================= */}
       <Route
         path="/income"
         element={
@@ -118,45 +98,73 @@ export default function App() {
 
       <Route
         path="/profitability/:clientId"
-        element={<ProtectedRoute><ClientProfitabilityPage /></ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <ClientProfitabilityPage />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/profitability"
-        element={<ProtectedRoute><ProfitabilityPage /></ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <ProfitabilityPage />
+          </ProtectedRoute>
+        }
       />
 
-      {/* =========================
-          AI OVERLAP PAGE
-          Dedicated overlap detection page
-          ========================= */}
+      <Route
+        path="/team"
+        element={
+          <ProtectedRoute>
+            <TeamPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/payments"
+        element={
+          <ProtectedRoute>
+            <PaymentsPage />
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/usage-analytics"
-        element={<ProtectedRoute><UsageAnalyticsPage /></ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <UsageAnalyticsPage />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/recommendations"
-        element={<ProtectedRoute><RecommendationsPage /></ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <RecommendationsPage />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/overlap"
-        element={<ProtectedRoute><OverlapPage /></ProtectedRoute>}
+        element={
+          <ProtectedRoute>
+            <OverlapPage />
+          </ProtectedRoute>
+        }
       />
 
       <Route
         path="/ai-overlap"
-        element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}
-      />
-
-      {/* =========================
-          DEFAULT
-          ========================= */}
-      <Route
-        path="/"
         element={
-          <Navigate to="/login" replace />
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
         }
       />
 
@@ -168,6 +176,7 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/category-spending"
         element={
@@ -187,11 +196,15 @@ export default function App() {
       {/* =========================
           UNKNOWN ROUTES
           ========================= */}
+
+      <Route
+        path="/"
+        element={<Navigate to="/login" replace />}
+      />
+
       <Route
         path="*"
-        element={
-          <Navigate to="/login" replace />
-        }
+        element={<Navigate to="/login" replace />}
       />
     </Routes>
   );

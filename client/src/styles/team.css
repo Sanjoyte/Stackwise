@@ -1,0 +1,68 @@
+.team-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.team-status-pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.team-status-approved {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.team-status-rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.team-status-modification_requested {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+.team-timeline {
+  position: relative;
+  padding-left: 22px;
+}
+
+.team-timeline::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: #e6e1f0;
+}
+
+.team-timeline-item {
+  position: relative;
+  padding-bottom: 18px;
+}
+
+.team-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+.team-timeline-dot {
+  position: absolute;
+  left: -22px;
+  top: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #6366f1;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 2px #e6e1f0;
+}

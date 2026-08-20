@@ -10,11 +10,11 @@ import {
   ChartPie,
   CircleDollarSign,
   BellRing,
+  Users,
+  CreditCard,
 } from "lucide-react";
 
-import {
-  NavLink,
-} from "react-router";
+import { NavLink } from "react-router";
 
 const navigationItems = [
   {
@@ -33,10 +33,10 @@ const navigationItems = [
   },
 
   {
-     label: "Income",
-  icon: WalletCards,
-  path: "/income",
-  enabled: true,
+    label: "Income",
+    icon: WalletCards,
+    path: "/income",
+    enabled: true,
   },
 
   {
@@ -76,13 +76,15 @@ const navigationItems = [
     path: "/cash-flow",
     enabled: true,
   },
+
   {
-  label: "Category Spending",
-  shortLabel: "Categories",
-  icon: ChartPie,
-  path: "/category-spending",
-  enabled: true,
-},
+    label: "Category Spending",
+    shortLabel: "Categories",
+    icon: ChartPie,
+    path: "/category-spending",
+    enabled: true,
+  },
+
   {
     label: "Profitability",
     shortLabel: "Profit",
@@ -95,6 +97,18 @@ const navigationItems = [
     shortLabel: "Alerts",
     icon: BellRing,
     path: "/notifications",
+
+  {
+    label: "Team",
+    icon: Users,
+    path: "/team",
+    enabled: true,
+  },
+
+  {
+    label: "Payments",
+    icon: CreditCard,
+    path: "/payments",
     enabled: true,
   },
 ];
@@ -103,8 +117,7 @@ function NavigationItem({
   item,
   mobile = false,
 }) {
-  const Icon =
-    item.icon;
+  const Icon = item.icon;
 
   if (!item.enabled) {
     return (
@@ -122,8 +135,7 @@ function NavigationItem({
 
         <span>
           {mobile
-            ? item.shortLabel ||
-              item.label
+            ? item.shortLabel || item.label
             : item.label}
         </span>
       </button>
@@ -133,9 +145,7 @@ function NavigationItem({
   return (
     <NavLink
       to={item.path}
-      className={({
-        isActive,
-      }) =>
+      className={({ isActive }) =>
         `${
           mobile
             ? "cf-mobile-nav-item"
@@ -151,8 +161,7 @@ function NavigationItem({
 
       <span>
         {mobile
-          ? item.shortLabel ||
-            item.label
+          ? item.shortLabel || item.label
           : item.label}
       </span>
     </NavLink>
@@ -179,14 +188,12 @@ export function CashFlowSidebar() {
       </div>
 
       <nav className="cf-side-nav">
-        {navigationItems.map(
-          (item) => (
-            <NavigationItem
-              key={item.label}
-              item={item}
-            />
-          )
-        )}
+        {navigationItems.map((item) => (
+          <NavigationItem
+            key={item.label}
+            item={item}
+          />
+        ))}
       </nav>
 
       <div className="cf-sidebar-footer">
@@ -205,15 +212,13 @@ export function CashFlowSidebar() {
 export function CashFlowMobileNav() {
   return (
     <nav className="cf-mobile-nav">
-      {navigationItems.map(
-        (item) => (
-          <NavigationItem
-            key={item.label}
-            item={item}
-            mobile
-          />
-        )
-      )}
+      {navigationItems.map((item) => (
+        <NavigationItem
+          key={item.label}
+          item={item}
+          mobile
+        />
+      ))}
     </nav>
   );
 }
