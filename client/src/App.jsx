@@ -17,6 +17,7 @@ import CategorySpendingPage from "./pages/CategorySpendingPage";
 import ExpensesPage from "./pages/ExpensesPage";
 import ProfitabilityPage from "./pages/ProfitabilityPage";
 import ClientProfitabilityPage from "./pages/ClientProfitabilityPage";
+import NotificationsPage from "./pages/NotificationsPage";
 
 export default function App() {
   return (
@@ -172,6 +173,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <CategorySpendingPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <ProtectedRoute>
+            <NotificationsPage />
           </ProtectedRoute>
         }
       />

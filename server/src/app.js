@@ -20,6 +20,7 @@ import expenseCategoryRoutes from "./routes/expenseCategoryRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
 import clientRoutes from "./routes/clientRoutes.js";
 import profitabilityRoutes from "./routes/profitabilityRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
 
 const app = express();
 
@@ -148,6 +149,8 @@ app.use(
   "/api/profitability",
   profitabilityRoutes
 );
+
+app.use("/api/notifications", notificationRoutes);
 
 /* =========================
    404 handler

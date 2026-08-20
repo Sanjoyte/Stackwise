@@ -19,17 +19,17 @@ const buildMonthRange = (months) => {
   return result;
 };
 
-const getDecision = ({ usageLast30Days, averageMonthlyUsage, costPerUse }) => {
+const getDecision = ({ usageLast30Days, averageMonthlyUsage }) => {
   if (usageLast30Days === 0 && averageMonthlyUsage === 0) {
-    return { action: "Cancel", reason: "No usage has been recorded during the analyzed period, so the subscription is currently producing no measurable value." };
+    return { action: "Cancel", reason: "No usage recorded. Consider cancelling." };
   }
   if (usageLast30Days === 0 && averageMonthlyUsage > 0) {
-    return { action: "Downgrade", reason: `No usage was recorded in the last 30 days, although historical usage averages ${averageMonthlyUsage.toFixed(1)} times in active months. A lower tier may now provide better value.` };
+    return { action: "Downgrade", reason: "No use in 30 days. Consider downgrading." };
   }
   if (usageLast30Days <= 2 || averageMonthlyUsage < 3) {
-    return { action: "Downgrade", reason: `Usage averages ${averageMonthlyUsage.toFixed(1)} times per month, indicating that a lower tier may provide better value.` };
+    return { action: "Downgrade", reason: "Low usage. Consider downgrading." };
   }
-  return { action: "Keep", reason: `The subscription averages ${averageMonthlyUsage.toFixed(1)} uses per month${costPerUse === null ? "" : ` at ${costPerUse.toFixed(2)} per use`}, showing consistent value.` };
+  return { action: "Keep", reason: `Average: ${averageMonthlyUsage.toFixed(1)} uses/month. Keep it.` };
 };
 
 export function buildUsageAnalytics(subscriptions, logs, months = 6) {
@@ -64,7 +64,7 @@ export function buildUsageAnalytics(subscriptions, logs, months = 6) {
       totalUsage,
       averageMonthlyUsage,
       costPerUse,
-      decision: getDecision({ usageLast30Days, averageMonthlyUsage, costPerUse }),
+      decision: getDecision({ usageLast30Days, averageMonthlyUsage }),
       trend: monthRange.map((month) => ({ month, usageCount: usageByMonth[month] })),
     };
   });

@@ -9,6 +9,7 @@ import {
   Activity,
   ChartPie,
   CircleDollarSign,
+  BellRing,
 } from "lucide-react";
 
 import {
@@ -87,6 +88,13 @@ const navigationItems = [
     shortLabel: "Profit",
     icon: CircleDollarSign,
     path: "/profitability",
+    enabled: true,
+  },
+  {
+    label: "Notifications",
+    shortLabel: "Alerts",
+    icon: BellRing,
+    path: "/notifications",
     enabled: true,
   },
 ];
