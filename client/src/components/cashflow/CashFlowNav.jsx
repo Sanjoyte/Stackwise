@@ -106,8 +106,9 @@ const navigationItems = [
     shortLabel: "Alerts",
     icon: BellRing,
     path: "/notifications",
-  }  
-  ,
+    enabled: true,
+  },
+
   {
     label: "Team",
     icon: Users,
