@@ -20,6 +20,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 
 import TeamPage from "./pages/TeamPage";
 import PaymentsPage from "./pages/PaymentsPage";
+import FinancialHealthPage from "./pages/FinancialHealthPage";
 import TaxReportPage from "./pages/TaxReportPage";
 import TaxReportDetailPage from "./pages/TaxReportDetailPage";
 
@@ -112,6 +113,15 @@ export default function App() {
         element={
           <ProtectedRoute>
             <ProfitabilityPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/financial-health"
+        element={
+          <ProtectedRoute>
+            <FinancialHealthPage />
           </ProtectedRoute>
         }
       />
