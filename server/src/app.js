@@ -25,6 +25,8 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
 import teamRequestRoutes from "./routes/teamRequestRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import taxReportRoutes from "./routes/taxReportRoutes.js";
+import financialHealthRoutes from "./routes/financialHealthRoutes.js";
 
 const app = express();
 
@@ -135,6 +137,16 @@ app.use(
 app.use(
   "/api/payments",
   paymentRoutes
+);
+
+app.use(
+  "/api/tax-reports",
+  taxReportRoutes
+);
+
+app.use(
+  "/api/financial-health",
+  financialHealthRoutes
 );
 
 app.use(notFound);

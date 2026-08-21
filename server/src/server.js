@@ -29,6 +29,9 @@ const startServer = async () => {
 
     await connectDB();
 
+    const { seedTaxRules } = await import("./seeds/seed-bd-tax-rules.js");
+    await seedTaxRules();
+
     const PORT =
       process.env.PORT || 5000;
 

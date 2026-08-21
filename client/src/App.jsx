@@ -20,6 +20,9 @@ import NotificationsPage from "./pages/NotificationsPage";
 
 import TeamPage from "./pages/TeamPage";
 import PaymentsPage from "./pages/PaymentsPage";
+import FinancialHealthPage from "./pages/FinancialHealthPage";
+import TaxReportPage from "./pages/TaxReportPage";
+import TaxReportDetailPage from "./pages/TaxReportDetailPage";
 
 export default function App() {
   return (
@@ -115,6 +118,15 @@ export default function App() {
       />
 
       <Route
+        path="/financial-health"
+        element={
+          <ProtectedRoute>
+            <FinancialHealthPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/team"
         element={
           <ProtectedRoute>
@@ -190,6 +202,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <NotificationsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tax-reports"
+        element={
+          <ProtectedRoute>
+            <TaxReportPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tax-reports/:id"
+        element={
+          <ProtectedRoute>
+            <TaxReportDetailPage />
           </ProtectedRoute>
         }
       />
