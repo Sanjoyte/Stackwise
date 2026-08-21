@@ -92,13 +92,15 @@ const navigationItems = [
     path: "/profitability",
     enabled: true,
   },
+
   {
-    label: "Notifications",
-    shortLabel: "Alerts",
-    icon: BellRing,
-    path: "/notifications",
-  }  
-  ,
+  label: "Notifications",
+  shortLabel: "Alerts",
+  icon: BellRing,
+  path: "/notifications",
+  enabled: true,
+  },
+  
   {
     label: "Team",
     icon: Users,
