@@ -59,6 +59,17 @@ if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
 }
 
+app.get(
+  "/api",
+  (req, res) => {
+    res.status(200).json({
+      success: true,
+      message: "Stackwise API is running",
+      healthCheck: "/api/health",
+    });
+  }
+);
+
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     success: true,
