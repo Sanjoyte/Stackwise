@@ -96,14 +96,6 @@ const navigationItems = [
   },
 
   {
-  label: "Notifications",
-  shortLabel: "Alerts",
-  icon: BellRing,
-  path: "/notifications",
-  enabled: true,
-  },
-  
-  {
     label: "Financial Health",
     shortLabel: "Health",
     icon: HeartPulse,
@@ -118,6 +110,7 @@ const navigationItems = [
     path: "/tax-reports",
     enabled: true,
   },
+
   {
     label: "Notifications",
     shortLabel: "Alerts",
