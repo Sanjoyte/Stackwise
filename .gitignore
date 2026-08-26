@@ -29,3 +29,7 @@ server/.env
 # Nodemodule
 client/node_modules/
 server/node_modules/
+
+# Vercel local project links
+.vercel/
+**/.vercel/
