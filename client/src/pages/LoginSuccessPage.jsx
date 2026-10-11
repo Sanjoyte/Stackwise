@@ -1,7 +1,4 @@
-import { useNavigate } from "react-router";
-
 import {
-  ArrowRight,
   LogOut,
   Sparkles,
   WalletCards,
@@ -19,7 +16,6 @@ import "../styles/cashFlow.css";
 
 export default function LoginSuccessPage() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
   return (
     <div className="cf-page">
@@ -104,59 +100,6 @@ export default function LoginSuccessPage() {
                     </p>
                   </article>
                 ))}
-              </div>
-
-              {/* =========================
-                  NAVIGATION BUTTONS
-                  ========================= */}
-              <div className="mt-10 flex flex-wrap gap-4">
-                {/* =========================
-                    SUBSCRIPTIONS
-                    ========================= */}
-                <button
-                  type="button"
-                  onClick={() => navigate("/subscription")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-indigo-200 transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
-                >
-                  Go to Subscriptions
-                  <ArrowRight size={20} />
-                </button>
-
-                {/* =========================
-                    CASH FLOW
-                    ========================= */}
-                <button
-                  type="button"
-                  onClick={() => navigate("/cash-flow")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-emerald-200 transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
-                >
-                  Go to Cash Flow Dashboard
-                  <ArrowRight size={20} />
-                </button>
-
-                {/* =========================
-                    INCOME TRACKING
-                    ========================= */}
-                <button
-                  type="button"
-                  onClick={() => navigate("/income")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-cyan-200 transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
-                >
-                  Go to Income Tracking
-                  <ArrowRight size={20} />
-                </button>
-
-                {/* =========================
-                    OVERLAP ALERTS
-                    ========================= */}
-                <button
-                  type="button"
-                  onClick={() => navigate("/overlap")}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 px-8 py-4 text-base font-bold text-white shadow-lg shadow-rose-200 transition hover:-translate-y-0.5 hover:shadow-xl sm:w-auto"
-                >
-                  View Overlap Alerts
-                  <ArrowRight size={20} />
-                </button>
               </div>
             </section>
           </div>
