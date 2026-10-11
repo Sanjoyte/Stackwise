@@ -2,6 +2,8 @@
 
 Stackwise is a financial management app for freelancers and small teams. It tracks software subscriptions, income, expenses, and client profitability in one place. It also forecasts cash flow, scores financial health, and produces tax reports with AI-assisted deduction scanning.
 
+**Live demo:** https://stackwise-client-ruddy.vercel.app
+
 Built as a full-stack MERN project (course project for CSE 471).
 
 ## Features
